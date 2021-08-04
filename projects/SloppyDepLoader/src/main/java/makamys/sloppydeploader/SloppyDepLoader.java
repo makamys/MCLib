@@ -202,12 +202,8 @@ public class SloppyDepLoader {
 
             if (!mod.delete()) {
                 mod.deleteOnExit();
-                String msg = owner + " was unable to delete file " + mod.getPath() + " the game will now try to delete it on exit. If this dialog appears again, delete it manually.";
+                String msg = owner + " was unable to delete file " + mod.getPath() + " the game will try to delete it on exit. If this message appears again, delete it manually.";
                 System.err.println(msg);
-                if (!GraphicsEnvironment.isHeadless())
-                    JOptionPane.showMessageDialog(null, msg, "An update error has occured", JOptionPane.ERROR_MESSAGE);
-
-                System.exit(1);
             }
         }
 
@@ -227,11 +223,6 @@ public class SloppyDepLoader {
                 System.out.println("Download complete");
             } catch (Exception e) {
                 libFile.delete();
-                if (downloadMonitor.shouldStopIt()) {
-                    System.err.println("You have stopped the downloading operation before it could complete");
-                    System.exit(1);
-                    return;
-                }
                 System.err.println("A download error occured downloading " + dep.file.filename + " from " + dep.url + '/' + dep.file.filename + ": " + e.getMessage());
                 //downloadMonitor.showErrorDialog(dep.file.filename, dep.url + '/' + dep.file.filename);
                 //throw new RuntimeException("A download error occured", e);
