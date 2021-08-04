@@ -216,7 +216,7 @@ public class SloppyDepLoader {
             try {
                 URL libDownload = new URL(dep.url + '/' + dep.file.filename);
                 downloadMonitor.updateProgressString("Downloading file %s", libDownload.toString());
-                System.out.format("Downloading file %s\n", libDownload.toString());
+                System.out.println(String.format("Downloading file %s\n", libDownload.toString()));
                 URLConnection connection = libDownload.openConnection();
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
