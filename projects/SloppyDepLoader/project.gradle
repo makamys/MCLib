@@ -1,0 +1,5 @@
+if(!project.findProperty("enable_test")?.toBoolean()){
+	jar {
+		sourceSets.main.java.exclude('makamys/sloppydeploader/test/**')
+	}
+}
