@@ -4,6 +4,8 @@ import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import makamys.sloppydeploader.SloppyDepLoader;
+import makamys.sloppydeploader.SloppyDependency;
 
 @Mod(modid = SDLTest.MODID, version = "0.0")
 public class SDLTest {
@@ -12,7 +14,10 @@ public class SDLTest {
     
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        System.out.println("hello");
+        String uclVersion = "1.0";
+        String mcVersion = Loader.MC_VERSION;
+        SloppyDepLoader.addDependency(new SloppyDependency("https://github.com/makamys/UpdateCheckLib/releases/download/v" + uclVersion, "UpdateCheckLib-" + mcVersion + "-" + uclVersion + ".jar", "makamys.updatechecklib.UpdateCheckLib"));
+        SloppyDepLoader.addDependency(new SloppyDependency("garbage url", "jar-that-will-never-exist-1.7.10-0.0.jar", "class.that.will.never.Exist"));
     }
     
 }

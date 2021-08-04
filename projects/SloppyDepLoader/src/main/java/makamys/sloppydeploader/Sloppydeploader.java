@@ -3,6 +3,10 @@ package makamys.sloppydeploader;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent.RenderTickEvent;
 import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.FMLInjectionData;
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
@@ -40,7 +44,7 @@ import java.util.zip.ZipFile;
  * For autodownloading stuff.
  * This is really unoriginal, mostly ripped off CodeChickenCore, where it was mostly ripped off FML, credits to Chicken-Bones and cpw.
  */
-public class SloppyDepLoader implements IFMLLoadingPlugin, IFMLCallHook {
+public class SloppyDepLoader {
     private static ByteBuffer downloadBuffer = ByteBuffer.allocateDirect(1 << 23);
     private static final String owner = "Sloppy DepLoader";
     private static DepLoadInst inst;
@@ -281,6 +285,15 @@ public class SloppyDepLoader implements IFMLLoadingPlugin, IFMLCallHook {
             v_modsDir = new File(mcDir, "mods/" + mcVer);
             if (!v_modsDir.exists())
                 v_modsDir.mkdirs();
+            
+            FMLCommonHandler.instance().bus().register(this);
+        }
+        
+        // this happens after pre-init, so mods should have registered their dependencies by now
+        @SubscribeEvent
+        public void onRenderTick(RenderTickEvent event) {
+            load();
+            FMLCommonHandler.instance().bus().unregister(this);
         }
 
         private void addClasspath(String name) {
@@ -341,8 +354,6 @@ public class SloppyDepLoader implements IFMLLoadingPlugin, IFMLCallHook {
                 download(connection.getInputStream(), sizeGuess, libFile);
                 downloadMonitor.updateProgressString("Download complete");
                 System.out.println("Download complete");
-
-                scanDepInfo(libFile);
             } catch (Exception e) {
                 libFile.delete();
                 if (downloadMonitor.shouldStopIt()) {
@@ -442,7 +453,6 @@ public class SloppyDepLoader implements IFMLLoadingPlugin, IFMLCallHook {
         }
 
         public void load() {
-            scanDepInfos();
             if (depMap.isEmpty())
                 return;
 
@@ -489,65 +499,27 @@ public class SloppyDepLoader implements IFMLLoadingPlugin, IFMLCallHook {
             return list;
         }
 
-        private void scanDepInfos() {
-            for (File file : modFiles()) {
-                if (!file.getName().endsWith(".jar") && !file.getName().endsWith(".zip"))
-                    continue;
-
-                scanDepInfo(file);
-            }
-        }
-
-        private void scanDepInfo(File file) {
-            try {
-                ZipFile zip = new ZipFile(file);
-                ZipEntry e = zip.getEntry("dependancies.info");
-                if (e == null) e = zip.getEntry("dependencies.info");
-                if (e != null)
-                    loadJSon(zip.getInputStream(e));
-                zip.close();
-            } catch (Exception e) {
-                System.err.println("Failed to load dependencies.info from " + file.getName() + " as JSON");
-                e.printStackTrace();
-            }
-        }
-
-        private void loadJSon(InputStream input) throws IOException {
-            InputStreamReader reader = new InputStreamReader(input);
-            JsonElement root = new JsonParser().parse(reader);
-            if (root.isJsonArray())
-                loadJSonArr(root);
-            else
-                loadJson(root.getAsJsonObject());
-            reader.close();
-        }
-
-        private void loadJSonArr(JsonElement root) throws IOException {
-            for (JsonElement node : root.getAsJsonArray())
-                loadJson(node.getAsJsonObject());
-        }
-
-        private void loadJson(JsonObject node) throws IOException {
+        public void addSloppyDep(SloppyDependency dep) throws IOException {
             boolean obfuscated = ((LaunchClassLoader) SloppyDepLoader.class.getClassLoader())
                     .getClassBytes("net.minecraft.world.World") == null;
 
-            String testClass = node.get("class").getAsString();
+            String testClass = dep.testClass;
             if (SloppyDepLoader.class.getResource("/" + testClass.replace('.', '/') + ".class") != null)
                 return;
 
-            String repo = node.get("repo").getAsString();
-            String filename = node.get("file").getAsString();
-            if (!obfuscated && node.has("dev"))
-                filename = node.get("dev").getAsString();
+            String repo = dep.repo;
+            String filename = dep.filename;
+            if (!obfuscated && dep.dev.isPresent())
+                filename = dep.dev.get();
 
-            boolean coreLib = node.has("coreLib") && node.get("coreLib").getAsBoolean();
+            boolean coreLib = false;
 
             Pattern pattern = null;
             try {
-                if(node.has("pattern"))
-                    pattern = Pattern.compile(node.get("pattern").getAsString());
+                if(dep.pattern.isPresent())
+                    pattern = Pattern.compile(dep.pattern.get());
             } catch (PatternSyntaxException e) {
-                System.err.println("Invalid filename pattern: "+node.get("pattern"));
+                System.err.println("Invalid filename pattern: "+ dep.pattern.get());
                 e.printStackTrace();
             }
             if(pattern == null)
@@ -578,41 +550,14 @@ public class SloppyDepLoader implements IFMLLoadingPlugin, IFMLCallHook {
         }
     }
 
-    public static void load() {
+    public static void addDependency(SloppyDependency dep) {
         if (inst == null) {
             inst = new DepLoadInst();
-            inst.load();
         }
-    }
-
-    @Override
-    public String[] getASMTransformerClass() {
-        return null;
-    }
-
-    @Override
-    public String getModContainerClass() {
-        return null;
-    }
-
-    @Override
-    public String getSetupClass() {
-        return getClass().getName();
-    }
-
-    @Override
-    public void injectData(Map<String, Object> data) {
-    }
-
-    @Override
-    public Void call() {
-        load();
-
-        return null;
-    }
-
-    @Override
-    public String getAccessTransformerClass() {
-        return null;
+        try {
+            inst.addSloppyDep(dep);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
