@@ -361,8 +361,9 @@ public class SloppyDepLoader {
                     System.exit(1);
                     return;
                 }
-                downloadMonitor.showErrorDialog(dep.file.filename, dep.url + '/' + dep.file.filename);
-                throw new RuntimeException("A download error occured", e);
+                System.err.println("A download error occured downloading " + dep.file.filename + " from " + dep.url + '/' + dep.file.filename + ": " + e.getMessage());
+                //downloadMonitor.showErrorDialog(dep.file.filename, dep.url + '/' + dep.file.filename);
+                //throw new RuntimeException("A download error occured", e);
             }
         }
 
