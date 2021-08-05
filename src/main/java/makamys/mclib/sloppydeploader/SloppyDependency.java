@@ -1,4 +1,4 @@
-package makamys.sloppydeploader;
+package makamys.mclib.sloppydeploader;
 
 import java.util.Optional;
 

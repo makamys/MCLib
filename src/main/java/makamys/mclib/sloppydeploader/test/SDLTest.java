@@ -1,11 +1,11 @@
-package makamys.sloppydeploader.test;
+package makamys.mclib.sloppydeploader.test;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
-import makamys.sloppydeploader.SloppyDepLoader;
-import makamys.sloppydeploader.SloppyDependency;
+import makamys.mclib.sloppydeploader.SloppyDepLoader;
+import makamys.mclib.sloppydeploader.SloppyDependency;
 
 @Mod(modid = SDLTest.MODID, version = "0.0")
 public class SDLTest {

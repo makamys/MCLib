@@ -1,4 +1,4 @@
-package makamys.sloppydeploader;
+package makamys.mclib.sloppydeploader;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
