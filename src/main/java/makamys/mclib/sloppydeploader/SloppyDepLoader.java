@@ -49,7 +49,7 @@ import java.util.regex.PatternSyntaxException;
 
 /**
  * For autodownloading stuff.
- * This is really unoriginal, mostly ripped off CodeChickenCore, where it was mostly ripped off FML, credits to Chicken-Bones and cpw.
+ * This is really unoriginal, mostly ripped off CodeChickenCore, where it was mostly ripped off FML, credits to ChickenBones and cpw.
  */
 public class SloppyDepLoader {
     private static ByteBuffer downloadBuffer = ByteBuffer.allocateDirect(1 << 23);
