@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * For autodownloading stuff.
+ * For autodownloading optional dependencies. Unlike CCC's DepLoader, this one does not exit the game if a dependency fails to be loaded.
  * This is really unoriginal, mostly ripped off CodeChickenCore, where it was mostly ripped off FML, credits to ChickenBones and cpw.
  */
 public class SloppyDepLoader {
