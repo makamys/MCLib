@@ -50,6 +50,7 @@ import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,6 +67,8 @@ public class SloppyDepLoader {
     private static DepLoadInst inst;
     public static final String KEY = "SloppyDepLoader";
     public static final String NS = KEY;
+    
+    private static Map<String, String> modDeps = SharedReference.get(NS, "modDeps", HashMap.class);
 
     public interface IDownloadDisplay {
         void resetProgress(int sizeGuess);
@@ -463,14 +466,15 @@ public class SloppyDepLoader {
     public static void preInit() {
         MutableBoolean alreadyInited = SharedReference.get(NS, "alreadyInited", MutableBoolean.class);
         if(alreadyInited.isFalse()) {
-            for(ModContainer mc : Loader.instance().getActiveModList()) {
-                Optional<String> key = mc.getCustomModProperties().keySet().stream().filter(k -> k.equals(KEY)).findFirst();
-                if(key.isPresent()) {
-                    Arrays.stream(mc.getCustomModProperties().get(key.get()).split(";")).forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
-                }
+            for(Entry<String, String> modDepEntry : modDeps.entrySet()) {
+                Arrays.stream(modDepEntry.getValue().split(";")).forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
             }
             alreadyInited.setTrue();
             inst.load();
         }
+    }
+
+    public static void addDependenciesForMod(String modid, SloppyDependency... sloppyDependencies) {
+        modDeps.put(modid, String.join(";", Arrays.stream(sloppyDependencies).map(d -> d.serializeToString()).toArray(String[]::new)));
     }
 }

@@ -17,11 +17,19 @@ public class SloppyDependency {
         this.testClass = testClass;
         this.repo = repo;
         this.filename = filename;
-        this.dev = Optional.ofNullable(dev);
-        this.pattern = Optional.ofNullable(pattern);
+        this.dev = stringToOpt(dev);
+        this.pattern = stringToOpt(pattern);
+    }
+    
+    private static Optional<String> stringToOpt(String str) {
+        return str == null || str.isEmpty() ? Optional.empty() : Optional.of(str);
     }
     
     public SloppyDependency(String repo, String filename, String testClass) {
         this(repo, filename, testClass, null, null);
+    }
+    
+    public String serializeToString() {
+        return String.join(",", new String[] {repo, filename, testClass, dev.orElse(""), pattern.orElse("")});
     }
 }
