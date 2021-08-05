@@ -32,6 +32,7 @@ import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.FMLInjectionData;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import makamys.mclib.core.sharedstate.SharedReference;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.launchwrapper.Launch;
@@ -54,6 +55,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * For autodownloading optional dependencies. Unlike CCC's DepLoader, this one does not exit the game if a dependency fails to be loaded.
@@ -164,9 +168,8 @@ public class SloppyDepLoader {
         private Map<String, Dependency> depMap = new HashMap<String, Dependency>();
         private HashSet<String> depSet = new HashSet<String>();
 
-        // keys used for sharing state across multiple instances (needed since this is a shaded library)
-        private static final String SHOWED_RESTART_NOTIFICATION_KEY = "makamys.sloppydeploader.showedNotification";
-        private static final String DOWNLOADED_DEPENDENCIES_KEY = "makamys.sloppydeploader.downloadedDependencies";
+        private MutableBoolean showedRestartNotification = SharedReference.get("SloppyDepLoader", "downloadedDependencies", MutableBoolean.class);
+        private List<String> globalDownloadedDeps = SharedReference.get("SloppyDepLoader", "downloadedDependencies", ArrayList.class);
         
         public DepLoadInst() {
             ConfigSDL.reload();
@@ -196,22 +199,15 @@ public class SloppyDepLoader {
         @SideOnly(Side.CLIENT)
         public void onGui(GuiOpenEvent event) {
             if(event.gui instanceof GuiMainMenu) {
-                if(!Launch.blackboard.containsKey(SHOWED_RESTART_NOTIFICATION_KEY) && !getGlobalDownloadedDependencies().isEmpty()) {
+                if(showedRestartNotification.isFalse() && !globalDownloadedDeps.isEmpty()) {
                     ConfigSDL.reload();
                     if(ConfigSDL.showRestartNotification) {
-                        event.gui = new GuiRestartNotification(event.gui, getGlobalDownloadedDependencies());
-                        Launch.blackboard.put(SHOWED_RESTART_NOTIFICATION_KEY, true);
+                        event.gui = new GuiRestartNotification(event.gui, globalDownloadedDeps);
+                        showedRestartNotification.setTrue();
                     }
                 }
                 MinecraftForge.EVENT_BUS.unregister(this);
             }
-        }
-        
-        private List<String> getGlobalDownloadedDependencies() {
-            if(!Launch.blackboard.containsKey(DOWNLOADED_DEPENDENCIES_KEY)) {
-                Launch.blackboard.put(DOWNLOADED_DEPENDENCIES_KEY, new ArrayList<String>());
-            }
-            return (List<String>)Launch.blackboard.get(DOWNLOADED_DEPENDENCIES_KEY);
         }
 
         private void addClasspath(String name) {
@@ -267,7 +263,7 @@ public class SloppyDepLoader {
                 download(connection.getInputStream(), sizeGuess, libFile);
                 downloadMonitor.updateProgressString("Download complete");
                 System.out.println("Download complete");
-                getGlobalDownloadedDependencies().add(dep.file.filename);
+                globalDownloadedDeps.add(dep.file.filename);
             } catch (Exception e) {
                 libFile.delete();
                 System.err.println("A download error occured downloading " + dep.file.filename + " from " + dep.url + '/' + dep.file.filename + ": " + e.getMessage());
