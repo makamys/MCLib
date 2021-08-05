@@ -3,3 +3,5 @@ if(!project.findProperty("enable_test")?.toBoolean()){
 		sourceSets.main.java.exclude('makamys/mclib/sloppydeploader/test/**')
 	}
 }
+
+archivesBaseName = "${project.modid}-sloppydeploader-${project.minecraft_version}"
