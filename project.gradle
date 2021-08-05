@@ -23,3 +23,11 @@ task SDLJar(type: Jar) {
 artifacts {
 	archives coreJar, SDLJar
 }
+
+repositories {
+	maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+	compile 'com.github.makamys:UpdateCheckLib:v1.0'
+}
