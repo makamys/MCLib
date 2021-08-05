@@ -30,7 +30,15 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.RenderTickEvent;
 import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.FMLInjectionData;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
+import net.minecraftforge.client.event.GuiOpenEvent;
+import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
+import net.minecraftforge.common.MinecraftForge;
 import sun.misc.URLClassPath;
 import sun.net.util.URLUtil;
 
@@ -156,7 +164,13 @@ public class SloppyDepLoader {
         private Map<String, Dependency> depMap = new HashMap<String, Dependency>();
         private HashSet<String> depSet = new HashSet<String>();
 
+        // keys used for sharing state across multiple instances (needed since this is a shaded library)
+        private static final String SHOWED_RESTART_NOTIFICATION_KEY = "makamys.sloppydeploader.showedNotification";
+        private static final String DOWNLOADED_DEPENDENCIES_KEY = "makamys.sloppydeploader.downloadedDependencies";
+        
         public DepLoadInst() {
+            ConfigSDL.reload();
+            
             String mcVer = (String) FMLInjectionData.data()[4];
             File mcDir = (File) FMLInjectionData.data()[6];
 
@@ -165,7 +179,10 @@ public class SloppyDepLoader {
             if (!v_modsDir.exists())
                 v_modsDir.mkdirs();
             
-            FMLCommonHandler.instance().bus().register(this);
+            if(ConfigSDL.enabled) {
+                FMLCommonHandler.instance().bus().register(this);
+                MinecraftForge.EVENT_BUS.register(this);
+            }
         }
         
         // this happens after pre-init, so mods should have registered their dependencies by now
@@ -173,6 +190,28 @@ public class SloppyDepLoader {
         public void onRenderTick(RenderTickEvent event) {
             load();
             FMLCommonHandler.instance().bus().unregister(this);
+        }
+        
+        @SubscribeEvent
+        @SideOnly(Side.CLIENT)
+        public void onGui(GuiOpenEvent event) {
+            if(event.gui instanceof GuiMainMenu) {
+                if(!Launch.blackboard.containsKey(SHOWED_RESTART_NOTIFICATION_KEY) && !getGlobalDownloadedDependencies().isEmpty()) {
+                    ConfigSDL.reload();
+                    if(ConfigSDL.showRestartNotification) {
+                        event.gui = new GuiRestartNotification(event.gui, getGlobalDownloadedDependencies());
+                        Launch.blackboard.put(SHOWED_RESTART_NOTIFICATION_KEY, true);
+                    }
+                }
+                MinecraftForge.EVENT_BUS.unregister(this);
+            }
+        }
+        
+        private List<String> getGlobalDownloadedDependencies() {
+            if(!Launch.blackboard.containsKey(DOWNLOADED_DEPENDENCIES_KEY)) {
+                Launch.blackboard.put(DOWNLOADED_DEPENDENCIES_KEY, new ArrayList<String>());
+            }
+            return (List<String>)Launch.blackboard.get(DOWNLOADED_DEPENDENCIES_KEY);
         }
 
         private void addClasspath(String name) {
@@ -228,6 +267,7 @@ public class SloppyDepLoader {
                 download(connection.getInputStream(), sizeGuess, libFile);
                 downloadMonitor.updateProgressString("Download complete");
                 System.out.println("Download complete");
+                getGlobalDownloadedDependencies().add(dep.file.filename);
             } catch (Exception e) {
                 libFile.delete();
                 System.err.println("A download error occured downloading " + dep.file.filename + " from " + dep.url + '/' + dep.file.filename + ": " + e.getMessage());
