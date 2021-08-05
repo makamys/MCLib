@@ -29,5 +29,5 @@ repositories {
 }
 
 dependencies {
-	compile 'com.github.makamys:UpdateCheckLib:1.0'
+	compileOnly 'com.github.makamys:UpdateCheckLib:1.0'
 }
