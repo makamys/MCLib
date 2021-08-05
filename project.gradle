@@ -4,4 +4,22 @@ if(!project.findProperty("enable_test")?.toBoolean()){
 	}
 }
 
-archivesBaseName = "${project.modid}-sloppydeploader-${project.minecraft_version}"
+archivesBaseName = "${project.modid}-all-${project.minecraft_version}"
+
+task coreJar(type: Jar) {
+	baseName = "${project.modid}-core-${project.minecraft_version}"
+	from(sourceSets.main.output) {
+		include 'makamys/mclib/core/**'
+	}
+}
+
+task SDLJar(type: Jar) {
+	baseName = "${project.modid}-sloppydeploader-${project.minecraft_version}"
+	from(sourceSets.main.output) {
+		include 'makamys/mclib/sloppydeploader/**'
+	}
+}
+
+artifacts {
+	archives coreJar, SDLJar
+}
