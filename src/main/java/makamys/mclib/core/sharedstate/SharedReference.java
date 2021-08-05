@@ -22,6 +22,7 @@ public class SharedReference<T> {
                 }
             }
         }
+        Launch.blackboard.put(id, ref);
         return (T)ref;
     }
     
