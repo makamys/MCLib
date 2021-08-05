@@ -74,6 +74,7 @@ public class SloppyDepLoader {
     private static final String owner = "Sloppy DepLoader";
     private static DepLoadInst inst;
     public static final String KEY = "SloppyDepLoader";
+    public static final String NS = KEY;
 
     public interface IDownloadDisplay {
         void resetProgress(int sizeGuess);
@@ -477,7 +478,7 @@ public class SloppyDepLoader {
     }
     
     public static void preInit() {
-        MutableBoolean alreadyInited = SharedReference.get("SloppyDepLoader", "alreadyInited", MutableBoolean.class);
+        MutableBoolean alreadyInited = SharedReference.get(NS, "alreadyInited", MutableBoolean.class);
         if(alreadyInited.isFalse()) {
             for(ModContainer mc : Loader.instance().getActiveModList()) {
                 Optional<String> key = mc.getCustomModProperties().keySet().stream().filter(k -> k.equals(KEY)).findFirst();
