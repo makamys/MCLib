@@ -9,6 +9,10 @@ public class SloppyDependency {
     Optional<String> dev;
     Optional<String> pattern;
     
+    public SloppyDependency(String[] params) {
+        this(params[0], params[1], params[2], params[3], params[4]);
+    }
+    
     public SloppyDependency(String repo, String filename, String testClass, String dev, String pattern) {
         this.testClass = testClass;
         this.repo = repo;

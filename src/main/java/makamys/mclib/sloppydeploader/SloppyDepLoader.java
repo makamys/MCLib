@@ -26,6 +26,8 @@
 package makamys.mclib.sloppydeploader;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.RenderTickEvent;
 import cpw.mods.fml.common.versioning.ComparableVersion;
@@ -33,6 +35,8 @@ import cpw.mods.fml.relauncher.FMLInjectionData;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import makamys.mclib.core.sharedstate.SharedReference;
+import makamys.mclib.sloppydeploader.SloppyDepLoader.Dependency;
+import makamys.mclib.sloppydeploader.SloppyDepLoader.VersionedFile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.launchwrapper.Launch;
@@ -52,9 +56,11 @@ import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
@@ -67,6 +73,7 @@ public class SloppyDepLoader {
     private static ByteBuffer downloadBuffer = ByteBuffer.allocateDirect(1 << 23);
     private static final String owner = "Sloppy DepLoader";
     private static DepLoadInst inst;
+    public static final String KEY = "SloppyDepLoader";
 
     public interface IDownloadDisplay {
         void resetProgress(int sizeGuess);
@@ -152,6 +159,7 @@ public class SloppyDepLoader {
          * Flag set to add this dep to the classpath immediately because it is required for a coremod.
          */
         public boolean coreLib;
+        public boolean downloaded;
 
         public Dependency(String url, VersionedFile file, boolean coreLib) {
             this.url = url;
@@ -170,6 +178,7 @@ public class SloppyDepLoader {
 
         private MutableBoolean showedRestartNotification = SharedReference.get("SloppyDepLoader", "downloadedDependencies", MutableBoolean.class);
         private List<String> globalDownloadedDeps = SharedReference.get("SloppyDepLoader", "downloadedDependencies", ArrayList.class);
+        private SloppyDepDownloadManager downloadManager = new SloppyDepDownloadManager();
         
         public DepLoadInst() {
             ConfigSDL.reload();
@@ -199,22 +208,16 @@ public class SloppyDepLoader {
         @SideOnly(Side.CLIENT)
         public void onGui(GuiOpenEvent event) {
             if(event.gui instanceof GuiMainMenu) {
-                if(showedRestartNotification.isFalse() && !globalDownloadedDeps.isEmpty()) {
-                    ConfigSDL.reload();
-                    if(ConfigSDL.showRestartNotification) {
-                        event.gui = new GuiRestartNotification(event.gui, globalDownloadedDeps);
-                        showedRestartNotification.setTrue();
+                if(downloadManager.allDone()) {
+                    if(inst != null && showedRestartNotification.isFalse() && !downloadManager.getDownloadedList().isEmpty()) {
+                        ConfigSDL.reload();
+                        if(ConfigSDL.showRestartNotification) {
+                            event.gui = new GuiRestartNotification(event.gui, downloadManager.getDownloadedList());
+                            showedRestartNotification.setTrue();
+                        }
                     }
+                    MinecraftForge.EVENT_BUS.unregister(this);
                 }
-                MinecraftForge.EVENT_BUS.unregister(this);
-            }
-        }
-
-        private void addClasspath(String name) {
-            try {
-                ((LaunchClassLoader) SloppyDepLoader.class.getClassLoader()).addURL(new File(v_modsDir, name).toURI().toURL());
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
             }
         }
 
@@ -263,7 +266,8 @@ public class SloppyDepLoader {
                 download(connection.getInputStream(), sizeGuess, libFile);
                 downloadMonitor.updateProgressString("Download complete");
                 System.out.println("Download complete");
-                globalDownloadedDeps.add(dep.file.filename);
+                //globalDownloadedDeps.add(dep.file.filename);
+                dep.downloaded = true;
             } catch (Exception e) {
                 libFile.delete();
                 System.err.println("A download error occured downloading " + dep.file.filename + " from " + dep.url + '/' + dep.file.filename + ": " + e.getMessage());
@@ -363,13 +367,6 @@ public class SloppyDepLoader {
                 return;
 
             loadDeps();
-            activateDeps();
-        }
-
-        private void activateDeps() {
-            for (Dependency dep : depMap.values())
-                if (dep.coreLib)
-                    addClasspath(dep.existing);
         }
 
         private void loadDeps() {
@@ -378,8 +375,12 @@ public class SloppyDepLoader {
                 Iterator<String> it = depSet.iterator();
                 Dependency dep = depMap.get(it.next());
                 it.remove();
-                load(dep);
+                loadAsync(dep);
             }
+        }
+        
+        private void loadAsync(Dependency dep) {
+            downloadManager.enqueueDownload(new SloppyDepDownloadTask(dep));
         }
 
         private void load(Dependency dep) {
@@ -447,9 +448,24 @@ public class SloppyDepLoader {
 
             return newest == newDep;
         }
+        
+        class SloppyDepDownloadTask implements Supplier<String> {
+            
+            Dependency dep;
+            
+            public SloppyDepDownloadTask(Dependency dep) {
+                this.dep = dep;
+            }
+            
+            @Override
+            public String get() {
+                load(dep);
+                return dep.downloaded ? dep.existing : null;
+            }
+        }
     }
 
-    public static void addDependency(SloppyDependency dep) {
+    private static void addDependency(SloppyDependency dep) {
         if (inst == null) {
             inst = new DepLoadInst();
         }
@@ -457,6 +473,20 @@ public class SloppyDepLoader {
             inst.addSloppyDep(dep);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    
+    public static void preInit() {
+        MutableBoolean alreadyInited = SharedReference.get("SloppyDepLoader", "alreadyInited", MutableBoolean.class);
+        if(alreadyInited.isFalse()) {
+            for(ModContainer mc : Loader.instance().getActiveModList()) {
+                Optional<String> key = mc.getCustomModProperties().keySet().stream().filter(k -> k.equals(KEY)).findFirst();
+                if(key.isPresent()) {
+                    Arrays.stream(mc.getCustomModProperties().get(key.get()).split(";")).forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
+                }
+            }
+            alreadyInited.setTrue();
+            inst.load();
         }
     }
 }
