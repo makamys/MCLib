@@ -470,7 +470,9 @@ public class SloppyDepLoader {
                 Arrays.stream(modDepEntry.getValue().split(";")).forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
             }
             alreadyInited.setTrue();
-            inst.load();
+            if(inst != null) {
+                inst.load();
+            }
         }
     }
 
