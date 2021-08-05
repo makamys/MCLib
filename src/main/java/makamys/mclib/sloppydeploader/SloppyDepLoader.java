@@ -35,21 +35,15 @@ import cpw.mods.fml.relauncher.FMLInjectionData;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import makamys.mclib.core.sharedstate.SharedReference;
-import makamys.mclib.sloppydeploader.SloppyDepLoader.Dependency;
-import makamys.mclib.sloppydeploader.SloppyDepLoader.VersionedFile;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
-import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
 import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
 import net.minecraftforge.common.MinecraftForge;
 import sun.misc.URLClassPath;
 import sun.net.util.URLUtil;
 
 import java.io.*;
 import java.lang.reflect.Field;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
@@ -60,10 +54,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * For autodownloading optional dependencies. Unlike CCC's DepLoader, this one does not exit the game if a dependency fails to be loaded.
@@ -178,7 +169,6 @@ public class SloppyDepLoader {
         private HashSet<String> depSet = new HashSet<String>();
 
         private MutableBoolean showedRestartNotification = SharedReference.get("SloppyDepLoader", "downloadedDependencies", MutableBoolean.class);
-        private List<String> globalDownloadedDeps = SharedReference.get("SloppyDepLoader", "downloadedDependencies", ArrayList.class);
         private SloppyDepDownloadManager downloadManager = new SloppyDepDownloadManager();
         
         public DepLoadInst() {
@@ -391,13 +381,6 @@ public class SloppyDepLoader {
                 download(dep);
                 dep.existing = dep.file.filename;
             }
-        }
-
-        private List<File> modFiles() {
-            List<File> list = new LinkedList<File>();
-            list.addAll(Arrays.asList(modsDir.listFiles()));
-            list.addAll(Arrays.asList(v_modsDir.listFiles()));
-            return list;
         }
 
         public void addSloppyDep(SloppyDependency dep) throws IOException {
