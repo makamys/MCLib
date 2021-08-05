@@ -4,7 +4,7 @@ if(!project.findProperty("enable_test")?.toBoolean()){
 	}
 }
 
-archivesBaseName = "${project.modid}-all-${project.minecraft_version}"
+archivesBaseName = "${project.modid}-alles-${project.minecraft_version}"
 
 task coreJar(type: Jar) {
 	baseName = "${project.modid}-core-${project.minecraft_version}"
@@ -19,11 +19,11 @@ task SDLJar(type: Jar) {
 		include 'makamys/mclib/sloppydeploader/**'
 	}
 }
-/*
+
 artifacts {
 	archives coreJar, SDLJar
 }
-*/
+
 repositories {
 	maven { url 'https://jitpack.io' }
 }
