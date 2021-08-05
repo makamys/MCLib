@@ -19,11 +19,11 @@ task SDLJar(type: Jar) {
 		include 'makamys/mclib/sloppydeploader/**'
 	}
 }
-
+/*
 artifacts {
 	archives coreJar, SDLJar
 }
-
+*/
 repositories {
 	maven { url 'https://jitpack.io' }
 }
