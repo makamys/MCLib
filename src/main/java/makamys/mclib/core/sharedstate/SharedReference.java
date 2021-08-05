@@ -9,7 +9,7 @@ public class SharedReference<T> {
     
     @SuppressWarnings("unchecked")
     private static <T> T get(String namespace, String name, Class<?> clazz, Supplier<T> constructor) {
-        String id = "shadedLibSharedState." + namespace + "." + name;
+        String id = "mclib.sharedstate." + namespace + "." + name;
         Object ref = Launch.blackboard.get(id);
         if(ref == null) {
             if(constructor != null) {
