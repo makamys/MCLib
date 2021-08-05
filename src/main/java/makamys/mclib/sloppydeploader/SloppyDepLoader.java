@@ -168,7 +168,7 @@ public class SloppyDepLoader {
         private File v_modsDir;
         private IDownloadDisplay downloadMonitor;
 
-        private Map<String, Dependency> depMap = new HashMap<String, Dependency>();
+        private Map<String, Dependency> depMap = SharedReference.get(NS, "depMap", HashMap.class);
         private HashSet<String> depSet = new HashSet<String>();
 
         private MutableBoolean showedRestartNotification = SharedReference.get("SloppyDepLoader", "downloadedDependencies", MutableBoolean.class);
