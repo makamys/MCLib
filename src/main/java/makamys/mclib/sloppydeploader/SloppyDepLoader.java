@@ -26,8 +26,6 @@
 package makamys.mclib.sloppydeploader;
 
 import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.RenderTickEvent;
 import cpw.mods.fml.common.versioning.ComparableVersion;
@@ -171,7 +169,7 @@ public class SloppyDepLoader {
         private Map<String, Dependency> depMap = SharedReference.get(NS, "depMap", HashMap.class);
         private HashSet<String> depSet = new HashSet<String>();
 
-        private MutableBoolean showedRestartNotification = SharedReference.get("SloppyDepLoader", "downloadedDependencies", MutableBoolean.class);
+        private MutableBoolean showedRestartNotification = SharedReference.get(NS, "downloadedDependencies", MutableBoolean.class);
         private SloppyDepDownloadManager downloadManager = new SloppyDepDownloadManager();
         
         public DepLoadInst() {
