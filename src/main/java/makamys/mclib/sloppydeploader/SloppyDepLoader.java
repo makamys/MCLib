@@ -54,6 +54,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * For autodownloading optional dependencies. Unlike CCC's DepLoader, this one does not exit the game if a dependency fails to be loaded.
@@ -63,8 +65,8 @@ public class SloppyDepLoader {
     private static ByteBuffer downloadBuffer = ByteBuffer.allocateDirect(1 << 23);
     private static final String owner = "Sloppy DepLoader";
     private static DepLoadInst inst;
-    public static final String KEY = "SloppyDepLoader";
-    public static final String NS = KEY;
+    public static final String NS = "SloppyDepLoader";
+    private static final Logger LOGGER = LogManager.getLogger(NS);
     
     private static Map<String, String> modDeps = SharedReference.get(NS, "modDeps", HashMap.class);
 
@@ -240,7 +242,7 @@ public class SloppyDepLoader {
             if (!mod.delete()) {
                 mod.deleteOnExit();
                 String msg = owner + " was unable to delete file " + mod.getPath() + " the game will try to delete it on exit. If this message appears again, delete it manually.";
-                System.err.println(msg);
+                LOGGER.error(msg);
             }
         }
 
@@ -249,7 +251,7 @@ public class SloppyDepLoader {
             try {
                 URL libDownload = new URL(dep.url + '/' + dep.file.filename);
                 downloadMonitor.updateProgressString("Downloading file %s", libDownload.toString());
-                System.out.println(String.format("Downloading file %s\n", libDownload.toString()));
+                LOGGER.info(String.format("Downloading file %s\n", libDownload.toString()));
                 URLConnection connection = libDownload.openConnection();
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
@@ -257,12 +259,12 @@ public class SloppyDepLoader {
                 int sizeGuess = connection.getContentLength();
                 download(connection.getInputStream(), sizeGuess, libFile);
                 downloadMonitor.updateProgressString("Download complete");
-                System.out.println("Download complete");
+                LOGGER.info("Download complete");
                 //globalDownloadedDeps.add(dep.file.filename);
                 dep.downloaded = true;
             } catch (Exception e) {
                 libFile.delete();
-                System.err.println("A download error occured downloading " + dep.file.filename + " from " + dep.url + '/' + dep.file.filename + ": " + e.getMessage());
+                LOGGER.error("A download error occured downloading " + dep.file.filename + " from " + dep.url + '/' + dep.file.filename + ": " + e.getMessage());
                 //downloadMonitor.showErrorDialog(dep.file.filename, dep.url + '/' + dep.file.filename);
                 //throw new RuntimeException("A download error occured", e);
             }
@@ -341,12 +343,12 @@ public class SloppyDepLoader {
 
                 int cmp = vfile.version.compareTo(dep.file.version);
                 if (cmp < 0) {
-                    System.out.println("Deleted old version " + f.getName());
+                    LOGGER.info("Deleted old version " + f.getName());
                     deleteMod(f);
                     return null;
                 }
                 if (cmp > 0) {
-                    System.err.println("Warning: version of " + dep.file.name + ", " + vfile.version + " is newer than request " + dep.file.version);
+                    LOGGER.warn("Warning: version of " + dep.file.name + ", " + vfile.version + " is newer than request " + dep.file.version);
                     return f.getName();
                 }
                 return f.getName();//found dependency
@@ -404,7 +406,7 @@ public class SloppyDepLoader {
                 if(dep.pattern.isPresent())
                     pattern = Pattern.compile(dep.pattern.get());
             } catch (PatternSyntaxException e) {
-                System.err.println("Invalid filename pattern: "+ dep.pattern.get());
+                LOGGER.error("Invalid filename pattern: "+ dep.pattern.get());
                 e.printStackTrace();
             }
             if(pattern == null)
