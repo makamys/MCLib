@@ -19,7 +19,7 @@ public class UpdateCheckLibHelper {
         
         if(!uclVersion.startsWith("@")) {
             SloppyDepLoader.addDependenciesForMod(Loader.instance().activeModContainer().getModId(),
-                    new SloppyDependency("https://github.com/makamys/UpdateCheckLib/releases/download/v" + uclVersion,
+                    new SloppyDependency("https://github.com/makamys/UpdateCheckLib/releases/download/" + uclVersion,
                             "UpdateCheckLib-" + Loader.MC_VERSION + "-" + uclVersion + ".jar",
                             "makamys.updatechecklib.UpdateCheckLib")
                     );
