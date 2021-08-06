@@ -1,0 +1,1 @@
+archivesBaseName = "${project.modid}-lesser-all-${project.minecraft_version}"

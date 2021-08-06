@@ -4,14 +4,7 @@ if(!project.findProperty("enable_test")?.toBoolean()){
 	}
 }
 
-archivesBaseName = "${project.modid}-all-${project.minecraft_version}"
-
-task cclJar(type: Jar) {
-	baseName = "${project.modid}-ccl-${project.minecraft_version}"
-	from(sourceSets.main.output) {
-		include 'makamys/mclib/ccl/**'
-	}
-}
+archivesBaseName = "${project.modid}-main-all-${project.minecraft_version}"
 
 repositories {
 	maven { url 'https://jitpack.io' }
