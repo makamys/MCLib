@@ -6,23 +6,12 @@ if(!project.findProperty("enable_test")?.toBoolean()){
 
 archivesBaseName = "${project.modid}-all-${project.minecraft_version}"
 
-/*task coreJar(type: Jar) {
-	baseName = "${project.modid}-core-${project.minecraft_version}"
+task cclJar(type: Jar) {
+	baseName = "${project.modid}-ccl-${project.minecraft_version}"
 	from(sourceSets.main.output) {
-		include 'makamys/mclib/core/**'
+		include 'makamys/mclib/ccl/**'
 	}
 }
-
-task SDLJar(type: Jar) {
-	baseName = "${project.modid}-sloppydeploader-${project.minecraft_version}"
-	from(sourceSets.main.output) {
-		include 'makamys/mclib/sloppydeploader/**'
-	}
-}
-
-artifacts {
-	archives coreJar, SDLJar
-}*/
 
 repositories {
 	maven { url 'https://jitpack.io' }
