@@ -8,7 +8,7 @@ This is a library that can be [shaded](http://web.archive.org/web/20150403035341
 # What's inside?
 
 * `SloppyDepLoader`: a dependency loader for optional dependencies, which won't fail if the dependency fails to be located. It *may or may not* load your dependencies *eventually*, hence its name.
-* `UpdateCheckLibHelper`: helper for easily using [UpdateCheckLib](https://github.com/makamys/UpdateCheckLib).
+* `UpdateCheckLibHelper`: helper for easily using [UpdateCheckLib](https://github.com/makamys/UpdateCheckLib). It will download UpdateCheckLib using `SloppyDepLoader` and register your mod for you.
 * `InventoryUtils2`: helper for CodeChickenLib's `InventoryUtils` class
 * `SharedReference`: helper for sharing state between multiple instances of the same shaded library (used by `SloppyDepLoader`)
 
