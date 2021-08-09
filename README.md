@@ -22,7 +22,7 @@ repositories {
 }
 
 minecraft {
-    srgExtra "PK: makamys/mclib <your mod's package>/lib/makamys/mclib"
+	srgExtra "PK: makamys/mclib <your mod's package>/lib/makamys/mclib"
 }
 
 dependencies {
