@@ -11,11 +11,6 @@ if(!project.hasProperty("test_uc")){
 
 archivesBaseName = "${project.modid}-main-all-${project.minecraft_version}"
 
-repositories {
-	maven { url 'https://jitpack.io' }
-}
-
 dependencies {
-	compileOnly 'com.github.makamys:UpdateCheckLib:1.0'
 	embed 'cglib:cglib-nodep:3.1'
 }

@@ -15,7 +15,9 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-	
+
+import com.google.common.eventbus.Subscribe;
+
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
@@ -25,13 +27,18 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import makamys.mclib.updatecheck.gui.GuiButtonUpdates;
+import makamys.mclib.core.MCLib;
+import makamys.mclib.updatecheck.ConfigUCL;
+import makamys.mclib.updatecheck.ResultHTMLRenderer;
+import makamys.mclib.updatecheck.UpdateCheckAPI;
 import makamys.mclib.updatecheck.UpdateCheckLib;
+import makamys.mclib.updatecheck.UpdateCheckTask;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
 import net.minecraftforge.common.MinecraftForge;
 
-@Mod(modid = UpdateCheckLib.MODID, version = UpdateCheckLib.VERSION)
 public class UpdateCheckLib
 {
     public static final String MODID = "UpdateCheckLib";
@@ -39,6 +46,8 @@ public class UpdateCheckLib
     
     public static final Logger LOGGER = LogManager.getLogger("updatechecklib");
 
+    private static UpdateCheckLib instance;
+    
     private static BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
     static ThreadPoolExecutor executor = new ThreadPoolExecutor(0, 4, 60, TimeUnit.SECONDS, workQueue);
     static List<CompletableFuture<UpdateCheckTask.Result>> futures = new ArrayList<>();
@@ -55,6 +64,10 @@ public class UpdateCheckLib
     GuiButtonUpdates updatesButton;
     
     static {
+    	instance = new UpdateCheckLib();
+    	MCLib.registerOnFMLBus(instance);
+    	MinecraftForge.EVENT_BUS.register(instance);
+    	
     	categories.put(UpdateCheckAPI.MODS_CATEGORY_ID, MODS);
     	categories.put(UpdateCheckAPI.RESOURCE_PACKS_CATEGORY_ID, RESOURCE_PACKS);
     }
@@ -64,9 +77,9 @@ public class UpdateCheckLib
     	return ConfigUCL.enabled;
     }
     
-    @EventHandler
+    @Subscribe
     public void preInit(FMLPreInitializationEvent event) {
-    	MinecraftForge.EVENT_BUS.register(this);
+    	
     }
     
     @SubscribeEvent
@@ -92,7 +105,7 @@ public class UpdateCheckLib
     	}
     }
     
-    @EventHandler
+    @Subscribe
     public void postInit(FMLPostInitializationEvent event) {
     	if(!isEnabled()) return;
     	CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {})).thenRun(new Runnable() {	

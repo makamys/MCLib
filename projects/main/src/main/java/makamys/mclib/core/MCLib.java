@@ -10,9 +10,13 @@ import cpw.mods.fml.common.LoadController;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.ReflectionHelper;
+import makamys.mclib.core.sharedstate.SharedField;
 import makamys.mclib.core.sharedstate.SharedLibHelper;
+import makamys.mclib.updatecheck.UpdateCheckAPI;
 
 public class MCLib {
+	
+	static { SharedLibHelper.shareifyClass(MCLib.class); }
 	
 	public static final String VERSION = "0.1.3";
 	
@@ -20,6 +24,11 @@ public class MCLib {
 	
 	public static Logger LOGGER;
 	public static final Logger GLOGGER = LogManager.getLogger("mclib");
+	
+	private static EventBus fmlMasterChannel;
+	
+	@SharedField
+	public static UpdateCheckAPI updateCheckAPI;
 	
 	public MCLib(boolean subscribe) {
 		String modid = Loader.instance().activeModContainer().getModId();
@@ -32,8 +41,8 @@ public class MCLib {
 		if(subscribe) {
 			try {
 				LoadController lc = ReflectionHelper.getPrivateValue(Loader.class, Loader.instance(), "modController");
-				EventBus masterChannel = ReflectionHelper.getPrivateValue(LoadController.class, lc, "masterChannel");
-				masterChannel.register(this);
+				fmlMasterChannel = ReflectionHelper.getPrivateValue(LoadController.class, lc, "masterChannel");
+				registerOnFMLBus(this);
 			} catch(Exception e) {
 				LOGGER.error("Failed to subscribe to LoadController's bus. The state change event handlers will have to be called manually from your mod.");
 				e.printStackTrace();
@@ -59,6 +68,10 @@ public class MCLib {
 	@Subscribe
     public void onPreInit(FMLPreInitializationEvent event) {
 		
+	}
+	
+	public static void registerOnFMLBus(Object object) {
+		fmlMasterChannel.register(object);
 	}
 	
 }

@@ -59,7 +59,7 @@ public class ResultHTMLRenderer {
 			outFile.delete();
 		} else {
 			try (FileOutputStream out = new FileOutputStream(outFile)){
-				String template = IOUtils.toString(ResultHTMLRenderer.class.getClassLoader().getResourceAsStream("resources/updates.template.html"));
+				String template = IOUtils.toString(ResultHTMLRenderer.class.getClassLoader().getResourceAsStream("resources/mclib/updatecheck/updates.template.html"));
 				String html = String.format(template, generateTables());
 				IOUtils.write(html, out, "utf8");
 				LOGGER.info("Wrote update check results to " + outFile);
