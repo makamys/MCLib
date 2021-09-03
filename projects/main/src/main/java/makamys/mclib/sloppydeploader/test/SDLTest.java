@@ -6,6 +6,7 @@ import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLConstructionEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import makamys.mclib.core.MCLib;
+import makamys.mclib.core.MCLibModules;
 import makamys.mclib.sloppydeploader.SloppyDepLoader;
 import makamys.mclib.sloppydeploader.SloppyDependency;
 
@@ -27,9 +28,11 @@ public class SDLTest {
     
     public static final String MODID = "SloppyDepLoaderTest"; 
     
+    // TODO remove this
     @EventHandler
     public void onConstruction(FMLConstructionEvent event) {
     	MCLib.init();
+    	MCLibModules.testModule.hi();
     }
     
     @EventHandler

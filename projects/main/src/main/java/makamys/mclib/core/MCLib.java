@@ -10,12 +10,14 @@ import cpw.mods.fml.common.LoadController;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.ReflectionHelper;
+import makamys.mclib.core.sharedstate.SharedLibHelper;
 
 public class MCLib {
 	
 	public static final String VERSION = "0.1.3";
 	
-	private static MCLib instance;
+	public static MCLib instance;
+	// TODO move modules to an instance here
 	
 	public static Logger LOGGER;
 	public static final Logger GLOGGER = LogManager.getLogger("mclib");
@@ -25,6 +27,7 @@ public class MCLib {
 		LOGGER = LogManager.getLogger("mclib(" + modid + ")");
 		
 		MCLibModules.init();
+		SharedLibHelper.register(this);
 		
 		if(subscribe) {
 			try {
@@ -41,8 +44,13 @@ public class MCLib {
 	/**
 	 * Call this in your FMLConstructionEvent handler to initialize the library framework.
 	 */
+	// TODO rename to something less confusing
 	public static void init() {
-		init(true);
+		if(instance == null) {
+			init(true);
+		} else {
+			LOGGER.warn("Tried to call init() when library was already initialized");
+		}
 	}
 	
 	public static void init(boolean subscribe) {
