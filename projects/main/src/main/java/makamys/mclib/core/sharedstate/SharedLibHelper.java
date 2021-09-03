@@ -35,16 +35,20 @@ public class SharedLibHelper {
 
 	public static void shareifyClass(Class<?> clazz) {
 		for(Field f : clazz.getFields()) {
-			int mod = f.getModifiers();
-			if(Modifier.isStatic(mod) && Modifier.isPublic(mod)) {
-				try {
-					Enhancer e = new Enhancer();
-					e.setSuperclass(f.getType());
-					e.setCallback(new SharedModuleMethodRedirector(f));
-					Object obj = e.create();
-					f.set(null, obj);
-				} catch(Exception e) {
-					e.printStackTrace();
+			if(f.isAnnotationPresent(SharedField.class)) {
+				int mod = f.getModifiers();
+				if(Modifier.isStatic(mod) && Modifier.isPublic(mod)) {
+					try {
+						Enhancer e = new Enhancer();
+						e.setSuperclass(f.getType());
+						e.setCallback(new SharedModuleMethodRedirector(f));
+						Object obj = e.create();
+						f.set(null, obj);
+					} catch(Exception e) {
+						e.printStackTrace();
+					}
+				} else {
+					throw new IllegalArgumentException("Field " + f.getName() + " in class " + clazz.getCanonicalName() + " is not public and static, this is not supported.");
 				}
 			}
 		}
