@@ -35,7 +35,7 @@ public class SharedLibHelper {
 
 	public static void shareifyClass(Class<?> clazz) {
 		for(Field f : clazz.getFields()) {
-			if(f.isAnnotationPresent(SharedField.class)) {
+			//if(f.isAnnotationPresent(SharedField.class)) {
 				int mod = f.getModifiers();
 				if(Modifier.isStatic(mod) && Modifier.isPublic(mod)) {
 					try {
@@ -47,10 +47,10 @@ public class SharedLibHelper {
 					} catch(Exception e) {
 						e.printStackTrace();
 					}
-				} else {
+				}/* else {
 					throw new IllegalArgumentException("Field " + f.getName() + " in class " + clazz.getCanonicalName() + " is not public and static, this is not supported.");
-				}
-			}
+				}*/
+			//}
 		}
 	}
 	
