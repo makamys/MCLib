@@ -3,7 +3,9 @@ package makamys.mclib.sloppydeploader.test;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
+import cpw.mods.fml.common.event.FMLConstructionEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import makamys.mclib.core.MCLib;
 import makamys.mclib.sloppydeploader.SloppyDepLoader;
 import makamys.mclib.sloppydeploader.SloppyDependency;
 
@@ -24,6 +26,11 @@ public class SDLTest {
     public static final String UCL_VERSION = "1.0";
     
     public static final String MODID = "SloppyDepLoaderTest"; 
+    
+    @EventHandler
+    public void onConstruction(FMLConstructionEvent event) {
+    	MCLib.init();
+    }
     
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
