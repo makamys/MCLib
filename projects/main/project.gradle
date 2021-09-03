@@ -12,4 +12,5 @@ repositories {
 
 dependencies {
 	compileOnly 'com.github.makamys:UpdateCheckLib:1.0'
+	embed 'cglib:cglib-nodep:3.1'
 }

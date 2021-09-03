@@ -24,6 +24,8 @@ public class MCLib {
 		String modid = Loader.instance().activeModContainer().getModId();
 		LOGGER = LogManager.getLogger("mclib(" + modid + ")");
 		
+		MCLibModules.init();
+		
 		if(subscribe) {
 			try {
 				LoadController lc = ReflectionHelper.getPrivateValue(Loader.class, Loader.instance(), "modController");
