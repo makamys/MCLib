@@ -2,8 +2,11 @@
 
 apply plugin: 'forge'
 
+
+project.version = new File(project.multiproject_structure.toBoolean() ? "${projectDir}/../version.txt" : "${projectDir}/publish/version.txt").getText('UTF-8')
+
 group = project.group
-archivesBaseName = "${project.modid}-${project.minecraft_version}"
+archivesBaseName = "${project.archives_base}-${project.minecraft_version}"
 
 minecraft {
     version = "${project.minecraft_version}-${project.forge_version}"

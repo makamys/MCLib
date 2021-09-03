@@ -24,9 +24,10 @@ plugins {
 }
 
 dependencies {
-	compileOnly "codechicken:CodeChickenLib:1.7.10-1.1.3.140:dev"
-	compileOnly "codechicken:CodeChickenCore:1.7.10-1.0.7.47:dev"
+	compile "codechicken:CodeChickenLib:1.7.10-1.1.3.140:dev"
+	compile "codechicken:CodeChickenCore:1.7.10-1.0.7.47:dev"
 }
 
+project.version = new File("${projectDir}/../version.txt").getText('UTF-8')
 
 apply from: "buildscript/forge-1.7.gradle"
