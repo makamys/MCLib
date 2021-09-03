@@ -17,7 +17,6 @@ public class MCLib {
 	public static final String VERSION = "0.1.3";
 	
 	public static MCLib instance;
-	// TODO move modules to an instance here
 	
 	public static Logger LOGGER;
 	public static final Logger GLOGGER = LogManager.getLogger("mclib");
@@ -28,7 +27,6 @@ public class MCLib {
 		
 		LOGGER.debug("Initializing MCLib " + VERSION + " in " + modid);
 		
-		MCLibModules.init();
 		SharedLibHelper.register(this);
 		
 		if(subscribe) {

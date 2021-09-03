@@ -5,11 +5,9 @@ import makamys.mclib.core.sharedstate.SharedField;
 
 public class MCLibModules {
 	
+	static { SharedLibHelper.shareifyClass(MCLibModules.class); }
+	
 	@SharedField
 	public static TestModule testModule;
-	
-	public static void init() {
-		SharedLibHelper.shareifyClass(MCLibModules.class);
-	}
 	
 }
