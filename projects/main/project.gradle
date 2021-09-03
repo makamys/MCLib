@@ -1,6 +1,11 @@
-if(!project.findProperty("enable_test")?.toBoolean()){
+if(!project.hasProperty("test_sdl")){
 	jar {
 		sourceSets.main.java.exclude('makamys/mclib/sloppydeploader/test/**')
+	}
+}
+if(!project.hasProperty("test_uc")){
+	jar {
+		sourceSets.main.java.exclude('makamys/mclib/updatecheck/test/**')
 	}
 }
 

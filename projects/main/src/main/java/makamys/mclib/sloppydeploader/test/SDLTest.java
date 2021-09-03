@@ -14,7 +14,7 @@ public class SDLTest {
         SloppyDepLoader.addDependenciesForMod(Loader.instance().activeModContainer().getModId(),
                 new SloppyDependency("https://github.com/makamys/UpdateCheckLib/releases/download/v" + SDLTest.UCL_VERSION,
                         "UpdateCheckLib-" + Loader.MC_VERSION + "-" + SDLTest.UCL_VERSION + ".jar",
-                        "makamys.updatechecklib.UpdateCheckLib"),
+                        "makamys.mclib.updatecheck.UpdateCheckLib"),
                 new SloppyDependency("garbage url",
                         "jar-that-will-never-exist-1.7.10-0.0.jar",
                         "class.that.will.never.Exist")

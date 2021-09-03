@@ -3,7 +3,7 @@ package makamys.mclib.updatechecklibhelper;
 import cpw.mods.fml.common.Loader;
 import makamys.mclib.sloppydeploader.SloppyDepLoader;
 import makamys.mclib.sloppydeploader.SloppyDependency;
-import makamys.updatechecklib.UpdateCheckAPI;
+import makamys.mclib.updatecheck.UpdateCheckAPI;
 
 /** Helper class for easily downloading UpdateCheckLib if it's not present, and registering an update JSON if it is. <br><br>
  * Usage: create a static field holding an instance of this class in your main mod class, and call preInit() in your pre-init handler. */
@@ -21,7 +21,7 @@ public class UpdateCheckLibHelper {
             SloppyDepLoader.addDependenciesForMod(Loader.instance().activeModContainer().getModId(),
                     new SloppyDependency("https://github.com/makamys/UpdateCheckLib/releases/download/" + uclVersion,
                             "UpdateCheckLib-" + Loader.MC_VERSION + "-" + uclVersion + ".jar",
-                            "makamys.updatechecklib.UpdateCheckLib")
+                            "makamys.mclib.updatecheck.UpdateCheckLib")
                     );
         }
     }
