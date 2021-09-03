@@ -44,7 +44,6 @@ public class MCLib {
 	/**
 	 * Call this in your FMLConstructionEvent handler to initialize the library framework.
 	 */
-	// TODO rename to something less confusing
 	public static void init() {
 		if(instance == null) {
 			init(true);
@@ -58,8 +57,8 @@ public class MCLib {
 	}
 	
 	@Subscribe
-    public void preInit(FMLPreInitializationEvent event) {
-		LOGGER.info("preinit");
+    public void onPreInit(FMLPreInitializationEvent event) {
+		
 	}
 	
 }
