@@ -14,8 +14,6 @@ import makamys.mclib.updatecheck.UpdateCheckAPI;
 
 public class MCLib {
 	
-	static { SharedLibHelper.shareifyClass(MCLib.class); }
-	
 	public static final String VERSION = "0.1.3";
 	
 	public static MCLib instance;
@@ -24,9 +22,6 @@ public class MCLib {
 	public static final Logger GLOGGER = LogManager.getLogger("mclib");
 	
 	private static EventBus fmlMasterChannel;
-	
-	@SharedField
-	public static UpdateCheckAPI updateCheckAPI;
 	
 	public MCLib(boolean subscribe) {
 		String modid = Loader.instance().activeModContainer().getModId();

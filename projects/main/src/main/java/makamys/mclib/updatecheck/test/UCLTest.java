@@ -6,6 +6,7 @@ import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLConstructionEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import makamys.mclib.core.MCLib;
+import makamys.mclib.core.MCLibModules;
 import makamys.mclib.updatecheck.UpdateCheckAPI;
 
 @Mod(modid = UCLTest.MODID, version = "0.0")
@@ -24,7 +25,7 @@ public class UCLTest {
     }
     
     private void initUpdateCheck() {
-    	UpdateCheckAPI uc = MCLib.updateCheckAPI;
+    	UpdateCheckAPI uc = MCLibModules.updateCheckAPI;
     	
     	// outdated mod via network (json returns 1.7.10-35.4.1 as the version and https://github.com/makamys/MAtmos/releases as the homepage as of now)
     	uc.submitModTask(MODID, "https://raw.githubusercontent.com/makamys/MAtmos/master/updatejson/update-matmos.json");
