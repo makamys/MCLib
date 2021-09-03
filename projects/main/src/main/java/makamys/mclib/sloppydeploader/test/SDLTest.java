@@ -32,7 +32,6 @@ public class SDLTest {
     @EventHandler
     public void onConstruction(FMLConstructionEvent event) {
     	MCLib.init();
-    	MCLibModules.testModule.hi();
     }
     
     @EventHandler

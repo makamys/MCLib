@@ -26,6 +26,8 @@ public class MCLib {
 		String modid = Loader.instance().activeModContainer().getModId();
 		LOGGER = LogManager.getLogger("mclib(" + modid + ")");
 		
+		LOGGER.debug("Initializing MCLib " + VERSION + " in " + modid);
+		
 		MCLibModules.init();
 		SharedLibHelper.register(this);
 		

@@ -8,6 +8,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.mutable.MutableObject;
 
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.LoaderState;
 import cpw.mods.fml.common.versioning.ComparableVersion;
 import makamys.mclib.core.MCLib;
 import net.sf.cglib.proxy.Enhancer;
@@ -21,6 +23,7 @@ public class SharedLibHelper {
 	
 	public static void register(MCLib mcLib) {
 		thisLibPackage = getClassNameParent(mcLib.getClass().getCanonicalName(), 2);
+		MCLib.LOGGER.trace("Registering package " + thisLibPackage);
 		existingLibPackages.add(thisLibPackage);
 	}
 	
@@ -48,28 +51,35 @@ public class SharedLibHelper {
 	}
 	
 	public static boolean isNewestLib(MCLib mcLib) {
-		if(newestLibPackage.getValue() == null) {
-			newestLibPackage.setValue(getNewestLibPackage());
-		}
-		return newestLibPackage.getValue().equals(thisLibPackage);
+		return getNewestLibPackage().equals(thisLibPackage);
 	}
 	
 	private static String getNewestLibPackage() {
-		String newestPkg = null;
-		ComparableVersion newestVersion = null;
-		for(String pkg : existingLibPackages) {
-			try {
-				Class<?> otherMcLibClass = Class.forName(pkg + "." + toRelativeClassName(MCLib.class.getCanonicalName()));
-				ComparableVersion otherVersion = new ComparableVersion((String)otherMcLibClass.getField("VERSION").get(null));
-				if(newestVersion == null || newestVersion.compareTo(otherVersion) < 0) {
-					newestPkg = pkg;
-					newestVersion = otherVersion;
-				}
-			} catch(Exception e) {
-				e.printStackTrace();
-			}
+		if(!Loader.instance().hasReachedState(LoaderState.PREINITIALIZATION)) {
+			throw new IllegalStateException("Shared module was called before mod construction phase ended, this is not allowed.");
 		}
-		return newestPkg;
+		
+		if(newestLibPackage.getValue() == null) {	
+			String newestPkg = null;
+			ComparableVersion newestVersion = null;
+			for(String pkg : existingLibPackages) {
+				try {
+					Class<?> otherMcLibClass = Class.forName(pkg + "." + toRelativeClassName(MCLib.class.getCanonicalName()));
+					ComparableVersion otherVersion = new ComparableVersion((String)otherMcLibClass.getField("VERSION").get(null));
+					if(newestVersion == null || newestVersion.compareTo(otherVersion) < 0) {
+						newestPkg = pkg;
+						newestVersion = otherVersion;
+					}
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+			MCLib.LOGGER.debug("Latest version of MCLib present: " + newestVersion + " @ " + newestPkg);
+			
+			newestLibPackage.setValue(newestPkg);
+		}
+		
+		return newestLibPackage.getValue();
 	}
 	
 	public static String toRelativeClassName(String className) {
