@@ -4,11 +4,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
 
 import cpw.mods.fml.common.LoadController;
 import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import makamys.mclib.core.sharedstate.SharedField;
 import makamys.mclib.core.sharedstate.SharedLibHelper;
@@ -63,11 +61,6 @@ public class MCLib {
 	
 	public static void init(boolean subscribe) {
 		instance = new MCLib(subscribe);
-	}
-	
-	@Subscribe
-    public void onPreInit(FMLPreInitializationEvent event) {
-		
 	}
 	
 	public static void registerOnFMLBus(Object object) {
