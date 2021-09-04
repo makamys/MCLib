@@ -37,12 +37,13 @@ public class SharedLibHelper {
 		for(Field f : clazz.getFields()) {
 			//if(f.isAnnotationPresent(SharedField.class)) {
 				int mod = f.getModifiers();
-				if(Modifier.isStatic(mod) && Modifier.isPublic(mod)) {
+				if(Modifier.isStatic(mod)) {
 					try {
 						Enhancer e = new Enhancer();
 						e.setSuperclass(f.getType());
 						e.setCallback(new SharedModuleMethodRedirector(f));
 						Object obj = e.create();
+						f.setAccessible(true);
 						f.set(null, obj);
 					} catch(Exception e) {
 						e.printStackTrace();

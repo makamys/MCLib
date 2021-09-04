@@ -26,12 +26,14 @@
 package makamys.mclib.sloppydeploader;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.RenderTickEvent;
 import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.FMLInjectionData;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import makamys.mclib.core.MCLib;
 import makamys.mclib.core.sharedstate.SharedReference;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.launchwrapper.LaunchClassLoader;
@@ -56,6 +58,8 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.google.common.eventbus.Subscribe;
 
 /**
  * For autodownloading optional dependencies. Unlike CCC's DepLoader, this one does not exit the game if a dependency fails to be loaded.
@@ -175,8 +179,6 @@ public class SloppyDepLoader {
         private SloppyDepDownloadManager downloadManager = new SloppyDepDownloadManager();
         
         public DepLoadInst() {
-            ConfigSDL.reload();
-            
             String mcVer = (String) FMLInjectionData.data()[4];
             File mcDir = (File) FMLInjectionData.data()[6];
 
@@ -185,17 +187,13 @@ public class SloppyDepLoader {
             if (!v_modsDir.exists())
                 v_modsDir.mkdirs();
             
-            if(ConfigSDL.enabled) {
-                MinecraftForge.EVENT_BUS.register(this);
-                MCLib.FML_MASTER.register(this);
-            }
+            MCLib.FML_MASTER.register(this);
         }
         
-        // this happens after pre-init, so mods should have registered their dependencies by now
-        @SubscribeEvent
-        public void onRenderTick(RenderTickEvent event) {
-            load();
-            FMLCommonHandler.instance().bus().unregister(this);
+        @Subscribe
+        public void onInit(FMLInitializationEvent event) {
+        	// we have to wait until preinit phase has started proper to register objects on the mod event bus
+        	MinecraftForge.EVENT_BUS.register(this);
         }
         
         @SubscribeEvent
@@ -462,21 +460,16 @@ public class SloppyDepLoader {
             e.printStackTrace();
         }
     }
-    
-    public static void preInit() {
-        MutableBoolean alreadyInited = SharedReference.get(NS, "alreadyInited", MutableBoolean.class);
-        if(alreadyInited.isFalse()) {
-            for(Entry<String, String> modDepEntry : modDeps.entrySet()) {
+
+    public void preInit() {
+    	ConfigSDL.reload();
+    	if(ConfigSDL.enabled) {
+    		for(Entry<String, String> modDepEntry : modDeps.entrySet()) {
                 Arrays.stream(modDepEntry.getValue().split(";")).forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
             }
-            alreadyInited.setTrue();
             if(inst != null) {
                 inst.load();
             }
-        }
-    }
-
-    public static void addDependenciesForMod(String modid, SloppyDependency... sloppyDependencies) {
-        modDeps.put(modid, String.join(";", Arrays.stream(sloppyDependencies).map(d -> d.serializeToString()).toArray(String[]::new)));
+    	}
     }
 }

@@ -1,0 +1,18 @@
+package makamys.mclib.sloppydeploader;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import makamys.mclib.core.sharedstate.SharedReference;
+import static makamys.mclib.sloppydeploader.SloppyDepLoader.NS;
+
+public class SloppyDepLoaderAPI {
+	
+	private static Map<String, String> modDeps = SharedReference.get(NS, "modDeps", HashMap.class);
+	
+    public static void addDependenciesForMod(String modid, SloppyDependency... sloppyDependencies) {
+        modDeps.put(modid, String.join(";", Arrays.stream(sloppyDependencies).map(d -> d.serializeToString()).toArray(String[]::new)));
+    }
+	
+}
