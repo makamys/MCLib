@@ -12,14 +12,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import makamys.mclib.core.sharedstate.SharedReference;
-import static makamys.mclib.sloppydeploader.SloppyDepLoader.NS;
-
 public class SloppyDepDownloadManager {
     
-    private static BlockingQueue<Runnable> workQueue = SharedReference.get(NS, "workQueue", LinkedBlockingQueue.class);
-    static ThreadPoolExecutor executor = SharedReference.get(NS, "executor", () -> new ThreadPoolExecutor(0, 1, 60, TimeUnit.SECONDS, workQueue));
-    static List<CompletableFuture<String>> futures = SharedReference.get(NS, "futures", ArrayList.class);
+    private static BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
+    static ThreadPoolExecutor executor = new ThreadPoolExecutor(0, 1, 60, TimeUnit.SECONDS, workQueue);
+    static List<CompletableFuture<String>> futures = new ArrayList<>();
     
     public void enqueueDownload(Supplier task) {
         futures.add(CompletableFuture.supplyAsync(task, executor));

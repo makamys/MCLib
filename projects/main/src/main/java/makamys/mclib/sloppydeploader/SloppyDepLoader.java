@@ -72,7 +72,7 @@ public class SloppyDepLoader {
     public static final String NS = "SloppyDepLoader";
     private static final Logger LOGGER = LogManager.getLogger(NS);
     
-    private static Map<String, String> modDeps = SharedReference.get(NS, "modDeps", HashMap.class);
+    private static Map<String, String> modDeps = new HashMap<>();
 
     public interface IDownloadDisplay {
         void resetProgress(int sizeGuess);
@@ -172,10 +172,10 @@ public class SloppyDepLoader {
         private File v_modsDir;
         private IDownloadDisplay downloadMonitor;
 
-        private Map<String, Dependency> depMap = SharedReference.get(NS, "depMap", HashMap.class);
+        private Map<String, Dependency> depMap = new HashMap<>();
         private HashSet<String> depSet = new HashSet<String>();
 
-        private MutableBoolean showedRestartNotification = SharedReference.get(NS, "downloadedDependencies", MutableBoolean.class);
+        private boolean showedRestartNotification;
         private SloppyDepDownloadManager downloadManager = new SloppyDepDownloadManager();
         
         public DepLoadInst() {
@@ -201,11 +201,11 @@ public class SloppyDepLoader {
         public void onGui(GuiOpenEvent event) {
             if(event.gui instanceof GuiMainMenu) {
                 if(downloadManager.allDone()) {
-                    if(inst != null && showedRestartNotification.isFalse() && !downloadManager.getDownloadedList().isEmpty()) {
+                    if(inst != null && !showedRestartNotification && !downloadManager.getDownloadedList().isEmpty()) {
                         ConfigSDL.reload();
                         if(ConfigSDL.showRestartNotification) {
                             event.gui = new GuiRestartNotification(event.gui, downloadManager.getDownloadedList());
-                            showedRestartNotification.setTrue();
+                            showedRestartNotification = true;
                         }
                     }
                     MinecraftForge.EVENT_BUS.unregister(this);
@@ -464,7 +464,7 @@ public class SloppyDepLoader {
     public void preInit() {
     	ConfigSDL.reload();
     	if(ConfigSDL.enabled) {
-    		for(Entry<String, String> modDepEntry : modDeps.entrySet()) {
+    		for(Entry<String, String> modDepEntry : SloppyDepLoaderAPI.modDeps.entrySet()) {
                 Arrays.stream(modDepEntry.getValue().split(";")).forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
             }
             if(inst != null) {

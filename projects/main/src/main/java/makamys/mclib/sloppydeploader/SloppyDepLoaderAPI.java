@@ -9,7 +9,7 @@ import static makamys.mclib.sloppydeploader.SloppyDepLoader.NS;
 
 public class SloppyDepLoaderAPI {
 	
-	private static Map<String, String> modDeps = SharedReference.get(NS, "modDeps", HashMap.class);
+	static Map<String, String> modDeps = SharedReference.get(NS, "modDeps", HashMap.class);
 	
     public static void addDependenciesForMod(String modid, SloppyDependency... sloppyDependencies) {
         modDeps.put(modid, String.join(";", Arrays.stream(sloppyDependencies).map(d -> d.serializeToString()).toArray(String[]::new)));
