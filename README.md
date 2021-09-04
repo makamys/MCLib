@@ -7,7 +7,7 @@ This is a library that can be [shaded](http://web.archive.org/web/20150403035341
 
 # What's inside?
 
-* [`UpdateCheck`](docs/UpdateCheck.md): checks for updates and displays the results in a HTML file, with a notification button in the main menu.
+* [`UpdateCheck`](https://github.com/makamys/MCLib/wiki/UpdateCheck): checks for updates and displays the results in a HTML file, with a notification button in the main menu.
 	* Accessed via `MCLibModules.updateCheckAPI`
 * `SloppyDepLoader`: a dependency loader for optional dependencies, which won't fail if the dependency fails to be located. It *may or may not* load your dependencies *eventually*, hence its name.
 	* Accessed via `SloppyDepLoaderAPI`
@@ -47,11 +47,9 @@ Static helper classes like `SloppyDepLoader` can be used by simply calling their
 
 Shared modules like `UpdateCheck` are exposed through the static fields of the `MCLibModules` class. These can be used starting from the pre-init phase, *but no earlier*. When multiple mods with MCLib embedded are present, calls to shared modules from all mods are redirected to a single mod which has the newest version of the library.
 
+Check the [wiki](https://github.com/makamys/MCLib/wiki) for more documentation.
+
 Refer to my mod [Satchels](https://github.com/makamys/Satchels) for an example of a mod using this library.
-
-## More documentation
-
-* [UpdateCheck](docs/UpdateCheck.md)
 
 # Contributing
 
