@@ -51,8 +51,6 @@ public class MCLib {
 	public static void init() {
 		if(instance == null) {
 			init(true);
-		} else {
-			LOGGER.warn("Tried to call init() when library was already initialized");
 		}
 	}
 	
@@ -62,8 +60,8 @@ public class MCLib {
 	
 	@Subscribe
 	public void onPreInit(FMLPreInitializationEvent event) {
-		System.out.println("PREINIT.");
 		if(SharedLibHelper.isNewestLib(this)) {
+			LOGGER.trace("Running preinit");
 			InternalModules.sloppyDepLoader.preInit();
 		}
 	}

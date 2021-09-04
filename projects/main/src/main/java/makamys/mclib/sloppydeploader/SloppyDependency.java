@@ -32,4 +32,9 @@ public class SloppyDependency {
     public String serializeToString() {
         return String.join(",", new String[] {repo, filename, testClass, dev.orElse(""), pattern.orElse("")});
     }
+    
+    @Override
+    public String toString() {
+    	return "SloppyDependency{" + filename + " @ " + repo + "}";
+    }
 }

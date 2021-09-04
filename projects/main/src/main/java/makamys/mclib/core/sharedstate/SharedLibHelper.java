@@ -79,7 +79,7 @@ public class SharedLibHelper {
 					e.printStackTrace();
 				}
 			}
-			MCLib.LOGGER.debug("Latest version of MCLib present: " + newestVersion + " @ " + newestPkg);
+			MCLib.LOGGER.info("Latest version of MCLib present: " + newestVersion + " @ " + newestPkg);
 			
 			newestLibPackage.setValue(newestPkg);
 		}

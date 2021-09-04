@@ -165,6 +165,11 @@ public class SloppyDepLoader {
             this.file = file;
             this.coreLib = coreLib;
         }
+        
+        @Override
+        public String toString() {
+        	return "Dependency{" + file.name + " @ " + url + "}";
+        }
     }
 
     public static class DepLoadInst {
@@ -357,7 +362,9 @@ public class SloppyDepLoader {
         public void load() {
             if (depMap.isEmpty())
                 return;
-
+            
+            LOGGER.debug("Loading with depMap " + depMap);
+            
             loadDeps();
         }
 
@@ -389,8 +396,10 @@ public class SloppyDepLoader {
                     .getClassBytes("net.minecraft.world.World") == null;
 
             String testClass = dep.testClass;
-            if (SloppyDepLoader.class.getResource("/" + testClass.replace('.', '/') + ".class") != null)
+            if (SloppyDepLoader.class.getResource("/" + testClass.replace('.', '/') + ".class") != null) {
+            	LOGGER.trace("Skipping dependency " + dep + " because test class " + testClass + " is present");
                 return;
+            }
 
             String repo = dep.repo;
             String filename = dep.filename;
@@ -419,8 +428,11 @@ public class SloppyDepLoader {
 
         private void addDep(Dependency newDep) {
             if (mergeNew(depMap.get(newDep.file.name), newDep)) {
+            	LOGGER.trace("Adding dependency " + newDep);
                 depMap.put(newDep.file.name, newDep);
                 depSet.add(newDep.file.name);
+            } else {
+            	LOGGER.trace("Not adding dependency " + newDep + " because a newer version of it has been added already");
             }
         }
 
