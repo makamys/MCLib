@@ -1,8 +1,11 @@
 # UpdateCheck
 
 This is a library module Minecraft mods can use to check for updates. When there are mods with updates available, a button will appear in the main menu.
+
 ![](img/menu_gui.png)
+
 Clicking this button will open a simple HTML file containing the results of the update check.
+
 ![](img/updates_html.png)
 
 *Note: the results in the picture are dummy data provided by test cases, not real world results.*
