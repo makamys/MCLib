@@ -28,6 +28,5 @@ dependencies {
 	compile "codechicken:CodeChickenCore:1.7.10-1.0.7.47:dev"
 }
 
-project.version = new File("${projectDir}/../version.txt").getText('UTF-8')
 
 apply from: "buildscript/forge-1.7.gradle"
