@@ -7,6 +7,10 @@ import makamys.mclib.core.MCLib;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 
+/** Redirects method invocations of a field's object to the equivalent field inside the newest version of the library present.
+ * <br>
+ * (Equivalence here means the fields have the same name, and the enclosing class has the same canonical class name relative to mclib package.)
+ */
 public class SharedModuleMethodRedirector implements MethodInterceptor {
 
 	private Field field;

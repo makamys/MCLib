@@ -33,6 +33,7 @@ public class SharedLibHelper {
 		return String.join(".", canonicalNameParts);
 	}
 
+	/** Instantiates all static fields of a class with {@link SharedModuleMethodRedirector} proxy objects. */
 	public static void shareifyClass(Class<?> clazz) {
 		for(Field f : clazz.getFields()) {
 			//if(f.isAnnotationPresent(SharedField.class)) {
