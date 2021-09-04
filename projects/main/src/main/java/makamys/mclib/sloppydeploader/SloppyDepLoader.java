@@ -186,8 +186,8 @@ public class SloppyDepLoader {
                 v_modsDir.mkdirs();
             
             if(ConfigSDL.enabled) {
-                FMLCommonHandler.instance().bus().register(this);
                 MinecraftForge.EVENT_BUS.register(this);
+                MCLib.FML_MASTER.register(this);
             }
         }
         

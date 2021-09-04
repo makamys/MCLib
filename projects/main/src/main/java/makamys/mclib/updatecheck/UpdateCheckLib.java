@@ -65,7 +65,7 @@ public class UpdateCheckLib
     
     static {
     	instance = new UpdateCheckLib();
-    	MCLib.registerOnFMLBus(instance);
+    	MCLib.FML_MASTER.register(instance);
     	MinecraftForge.EVENT_BUS.register(instance);
     	
     	categories.put(UpdateCheckAPI.MODS_CATEGORY_ID, MODS);

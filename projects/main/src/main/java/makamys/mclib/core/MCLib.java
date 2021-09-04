@@ -21,7 +21,7 @@ public class MCLib {
 	public static Logger LOGGER;
 	public static final Logger GLOGGER = LogManager.getLogger("mclib");
 	
-	private static EventBus fmlMasterChannel;
+	public static EventBus FML_MASTER;
 	
 	public MCLib(boolean subscribe) {
 		String modid = Loader.instance().activeModContainer().getModId();
@@ -34,8 +34,8 @@ public class MCLib {
 		if(subscribe) {
 			try {
 				LoadController lc = ReflectionHelper.getPrivateValue(Loader.class, Loader.instance(), "modController");
-				fmlMasterChannel = ReflectionHelper.getPrivateValue(LoadController.class, lc, "masterChannel");
-				registerOnFMLBus(this);
+				FML_MASTER = ReflectionHelper.getPrivateValue(LoadController.class, lc, "masterChannel");
+				FML_MASTER.register(this);
 			} catch(Exception e) {
 				LOGGER.error("Failed to subscribe to LoadController's bus. The state change event handlers will have to be called manually from your mod.");
 				e.printStackTrace();
@@ -56,10 +56,6 @@ public class MCLib {
 	
 	public static void init(boolean subscribe) {
 		instance = new MCLib(subscribe);
-	}
-	
-	public static void registerOnFMLBus(Object object) {
-		fmlMasterChannel.register(object);
 	}
 	
 }
