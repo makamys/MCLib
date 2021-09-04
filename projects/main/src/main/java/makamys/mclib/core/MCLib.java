@@ -10,9 +10,7 @@ import cpw.mods.fml.common.LoadController;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.ReflectionHelper;
-import makamys.mclib.core.sharedstate.SharedField;
 import makamys.mclib.core.sharedstate.SharedLibHelper;
-import makamys.mclib.updatecheck.UpdateCheckAPI;
 
 public class MCLib {
 	

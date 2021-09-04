@@ -14,8 +14,6 @@ import org.apache.commons.io.IOUtils;
 
 import makamys.mclib.updatecheck.UpdateCheckLib.UpdateCategory;
 import makamys.mclib.updatecheck.ResultHTMLRenderer;
-import makamys.mclib.updatecheck.UpdateCheckLib;
-import makamys.mclib.updatecheck.UpdateCheckTask;
 
 public class ResultHTMLRenderer {
 	

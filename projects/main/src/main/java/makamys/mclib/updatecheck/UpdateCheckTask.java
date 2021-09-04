@@ -19,7 +19,6 @@ import com.google.gson.JsonPrimitive;
 
 import cpw.mods.fml.common.versioning.ComparableVersion;
 import makamys.mclib.updatecheck.UpdateCheckLib.UpdateCategory;
-import makamys.mclib.updatecheck.ConfigUCL;
 import makamys.mclib.updatecheck.UpdateCheckTask;
 
 class UpdateCheckTask implements Supplier<UpdateCheckTask.Result> {

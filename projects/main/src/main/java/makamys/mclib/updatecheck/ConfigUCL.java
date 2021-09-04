@@ -2,7 +2,6 @@ package makamys.mclib.updatecheck;
 
 import java.io.File;
 
-import makamys.mclib.updatecheck.UpdateCheckLib;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.config.Configuration;
 

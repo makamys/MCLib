@@ -6,7 +6,6 @@ import java.util.List;
 import org.lwjgl.input.Keyboard;
 
 import makamys.mclib.updatecheck.Util;
-import makamys.mclib.updatecheck.gui.GuiButtonGeneric;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import static net.minecraft.util.EnumChatFormatting.*;
