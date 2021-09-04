@@ -164,7 +164,7 @@ public class SloppyDepLoader {
         
         @Override
         public String toString() {
-        	return "Dependency{" + file.name + " @ " + url + "}";
+            return "Dependency{" + file.name + " @ " + url + "}";
         }
     }
 
@@ -193,8 +193,8 @@ public class SloppyDepLoader {
         
         @Subscribe
         public void onInit(FMLInitializationEvent event) {
-        	// we have to wait until preinit phase has started proper to register objects on the mod event bus
-        	MinecraftForge.EVENT_BUS.register(this);
+            // we have to wait until preinit phase has started proper to register objects on the mod event bus
+            MinecraftForge.EVENT_BUS.register(this);
         }
         
         @SubscribeEvent
@@ -393,7 +393,7 @@ public class SloppyDepLoader {
 
             String testClass = dep.testClass;
             if (SloppyDepLoader.class.getResource("/" + testClass.replace('.', '/') + ".class") != null) {
-            	LOGGER.trace("Skipping dependency " + dep + " because test class " + testClass + " is present");
+                LOGGER.trace("Skipping dependency " + dep + " because test class " + testClass + " is present");
                 return;
             }
 
@@ -424,11 +424,11 @@ public class SloppyDepLoader {
 
         private void addDep(Dependency newDep) {
             if (mergeNew(depMap.get(newDep.file.name), newDep)) {
-            	LOGGER.trace("Adding dependency " + newDep);
+                LOGGER.trace("Adding dependency " + newDep);
                 depMap.put(newDep.file.name, newDep);
                 depSet.add(newDep.file.name);
             } else {
-            	LOGGER.trace("Not adding dependency " + newDep + " because a newer version of it has been added already");
+                LOGGER.trace("Not adding dependency " + newDep + " because a newer version of it has been added already");
             }
         }
 
@@ -470,14 +470,14 @@ public class SloppyDepLoader {
     }
 
     public void preInit() {
-    	ConfigSDL.reload();
-    	if(ConfigSDL.enabled) {
-    		for(Entry<String, String> modDepEntry : SloppyDepLoaderAPI.modDeps.entrySet()) {
+        ConfigSDL.reload();
+        if(ConfigSDL.enabled) {
+            for(Entry<String, String> modDepEntry : SloppyDepLoaderAPI.modDeps.entrySet()) {
                 Arrays.stream(modDepEntry.getValue().split(";")).forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
             }
             if(inst != null) {
                 inst.load();
             }
-    	}
+        }
     }
 }

@@ -6,28 +6,28 @@ import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.config.Configuration;
 
 public class ConfigUCL {
-	
-	private static boolean loaded;
-	
-	public static boolean enabled;
-	public static boolean hideErrored;
-	public static String promoChannel;
-	
-	public static boolean showUpdatesButton;
-	
-	public static int updatesButtonX;
-	public static int updatesButtonY;
-	public static boolean updatesButtonAbsolutePos;
-	
-	public static void loadIfNotAlready() {
-		if(!loaded) {
-			reload();
-			loaded = true;
-		}
-	}
-	
-	public static void reload() {
-		Configuration config = new Configuration(new File(Launch.minecraftHome, "config/" + UpdateCheckLib.MODID + ".cfg"));
+    
+    private static boolean loaded;
+    
+    public static boolean enabled;
+    public static boolean hideErrored;
+    public static String promoChannel;
+    
+    public static boolean showUpdatesButton;
+    
+    public static int updatesButtonX;
+    public static int updatesButtonY;
+    public static boolean updatesButtonAbsolutePos;
+    
+    public static void loadIfNotAlready() {
+        if(!loaded) {
+            reload();
+            loaded = true;
+        }
+    }
+    
+    public static void reload() {
+        Configuration config = new Configuration(new File(Launch.minecraftHome, "config/" + UpdateCheckLib.MODID + ".cfg"));
         
         config.load();
         
@@ -43,6 +43,6 @@ public class ConfigUCL {
         if (config.hasChanged()) {
             config.save();
         }
-	}
-	
+    }
+    
 }

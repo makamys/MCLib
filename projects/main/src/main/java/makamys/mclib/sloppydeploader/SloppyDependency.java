@@ -35,6 +35,6 @@ public class SloppyDependency {
     
     @Override
     public String toString() {
-    	return "SloppyDependency{" + filename + " @ " + repo + "}";
+        return "SloppyDependency{" + filename + " @ " + repo + "}";
     }
 }

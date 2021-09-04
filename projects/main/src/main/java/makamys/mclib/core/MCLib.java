@@ -13,55 +13,55 @@ import cpw.mods.fml.relauncher.ReflectionHelper;
 import makamys.mclib.core.sharedstate.SharedLibHelper;
 
 public class MCLib {
-	
-	public static final String VERSION = "0.1.3";
-	
-	public static MCLib instance;
-	
-	public static Logger LOGGER;
-	public static final Logger GLOGGER = LogManager.getLogger("mclib");
-	
-	public static EventBus FML_MASTER;
-	
-	public MCLib(boolean subscribe) {
-		String modid = Loader.instance().activeModContainer().getModId();
-		LOGGER = LogManager.getLogger("mclib(" + modid + ")");
-		
-		LOGGER.debug("Initializing MCLib " + VERSION + " in " + modid);
-		
-		SharedLibHelper.register(this);
-		
-		if(subscribe) {
-			try {
-				LoadController lc = ReflectionHelper.getPrivateValue(Loader.class, Loader.instance(), "modController");
-				FML_MASTER = ReflectionHelper.getPrivateValue(LoadController.class, lc, "masterChannel");
-				FML_MASTER.register(this);
-			} catch(Exception e) {
-				LOGGER.error("Failed to subscribe to LoadController's bus. The state change event handlers will have to be called manually from your mod.");
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	/**
-	 * Call this in your FMLConstructionEvent handler to initialize the library framework.
-	 */
-	public static void init() {
-		if(instance == null) {
-			init(true);
-		}
-	}
-	
-	public static void init(boolean subscribe) {
-		instance = new MCLib(subscribe);
-	}
-	
-	@Subscribe
-	public void onPreInit(FMLPreInitializationEvent event) {
-		if(SharedLibHelper.isNewestLib(this)) {
-			LOGGER.trace("Running preinit");
-			InternalModules.sloppyDepLoader.preInit();
-		}
-	}
-	
+    
+    public static final String VERSION = "0.1.3";
+    
+    public static MCLib instance;
+    
+    public static Logger LOGGER;
+    public static final Logger GLOGGER = LogManager.getLogger("mclib");
+    
+    public static EventBus FML_MASTER;
+    
+    public MCLib(boolean subscribe) {
+        String modid = Loader.instance().activeModContainer().getModId();
+        LOGGER = LogManager.getLogger("mclib(" + modid + ")");
+        
+        LOGGER.debug("Initializing MCLib " + VERSION + " in " + modid);
+        
+        SharedLibHelper.register(this);
+        
+        if(subscribe) {
+            try {
+                LoadController lc = ReflectionHelper.getPrivateValue(Loader.class, Loader.instance(), "modController");
+                FML_MASTER = ReflectionHelper.getPrivateValue(LoadController.class, lc, "masterChannel");
+                FML_MASTER.register(this);
+            } catch(Exception e) {
+                LOGGER.error("Failed to subscribe to LoadController's bus. The state change event handlers will have to be called manually from your mod.");
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
+     * Call this in your FMLConstructionEvent handler to initialize the library framework.
+     */
+    public static void init() {
+        if(instance == null) {
+            init(true);
+        }
+    }
+    
+    public static void init(boolean subscribe) {
+        instance = new MCLib(subscribe);
+    }
+    
+    @Subscribe
+    public void onPreInit(FMLPreInitializationEvent event) {
+        if(SharedLibHelper.isNewestLib(this)) {
+            LOGGER.trace("Running preinit");
+            InternalModules.sloppyDepLoader.preInit();
+        }
+    }
+    
 }

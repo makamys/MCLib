@@ -12,30 +12,30 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 
 public class Util {
-	
-	public static void openURLInBrowser(String url) {
-		try {
-			Class oclass = Class.forName("java.awt.Desktop");
-			Object object = oclass.getMethod("getDesktop", new Class[0]).invoke((Object) null, new Object[0]);
-			oclass.getMethod("browse", new Class[] { URI.class }).invoke(object, new Object[] { new URI(url) });
-		} catch (Throwable throwable) {
-			UpdateCheckLib.LOGGER.error("Couldn\'t open link", throwable);
-		}
-	}
-	
-	/** A simple alternative to Minecraft's tooltip drawing function in case it can't be used. */
-	public static void drawSimpleTooltip(int mouseX, int mouseY, int z, List<String> lines) {
-		GuiScreen current = Minecraft.getMinecraft().currentScreen;
-		
-		FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
-		
-		int margin = 2;
+    
+    public static void openURLInBrowser(String url) {
+        try {
+            Class oclass = Class.forName("java.awt.Desktop");
+            Object object = oclass.getMethod("getDesktop", new Class[0]).invoke((Object) null, new Object[0]);
+            oclass.getMethod("browse", new Class[] { URI.class }).invoke(object, new Object[] { new URI(url) });
+        } catch (Throwable throwable) {
+            UpdateCheckLib.LOGGER.error("Couldn\'t open link", throwable);
+        }
+    }
+    
+    /** A simple alternative to Minecraft's tooltip drawing function in case it can't be used. */
+    public static void drawSimpleTooltip(int mouseX, int mouseY, int z, List<String> lines) {
+        GuiScreen current = Minecraft.getMinecraft().currentScreen;
+        
+        FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
+        
+        int margin = 2;
         
         int width = lines.stream().mapToInt(s -> fr.getStringWidth(s)).max().getAsInt();
         int height = lines.size() * 10;
         
-		int startX = mouseX - width / 2;
-		int startY = mouseY - height - 5;
+        int startX = mouseX - width / 2;
+        int startY = mouseY - height - 5;
         
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
@@ -61,9 +61,9 @@ public class Util {
         
         int y = 0;
         for(String s : lines) {
-        	current.drawString(Minecraft.getMinecraft().fontRenderer, s, startX + margin, startY + margin + y, 0xFFFFFF);
-        	y += 10;
+            current.drawString(Minecraft.getMinecraft().fontRenderer, s, startX + margin, startY + margin + y, 0xFFFFFF);
+            y += 10;
         }
-	}
-	
+    }
+    
 }

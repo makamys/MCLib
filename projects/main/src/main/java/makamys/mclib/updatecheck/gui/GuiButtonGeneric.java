@@ -9,9 +9,9 @@ import net.minecraft.client.gui.GuiButton;
 
 /* Adapted from tconstruct's AbstractTab */
 public class GuiButtonGeneric extends GuiButton {
-	
-	private Runnable clickListener;
-	
+    
+    private Runnable clickListener;
+    
     public GuiButtonGeneric(int id, int posX, int posY, int width, int height, String text) {
         super(id, posX, posY, width, height, text);
     }
@@ -28,31 +28,31 @@ public class GuiButtonGeneric extends GuiButton {
     }
 
     public void onClicked() {
-    	if(clickListener != null) {
-    		clickListener.run();
-    	}
+        if(clickListener != null) {
+            clickListener.run();
+        }
     }
     
     @Override
     public void drawButton(Minecraft p_146112_1_, int mouseX, int mouseY) {
-    	super.drawButton(p_146112_1_, mouseX, mouseY);
-    	
-    	boolean inWindow = this.visible && mouseX >= this.xPosition && mouseY >= this.yPosition && mouseX < this.xPosition + this.width && mouseY < this.yPosition + this.height;
-    	
-    	if(inWindow) {
-    		List<String> tooltipStrings = getTooltipStrings();
-    		if(tooltipStrings != null) {
-    			Util.drawSimpleTooltip(mouseX, mouseY, (int)this.zLevel, tooltipStrings);
-    		}
-    	}
+        super.drawButton(p_146112_1_, mouseX, mouseY);
+        
+        boolean inWindow = this.visible && mouseX >= this.xPosition && mouseY >= this.yPosition && mouseX < this.xPosition + this.width && mouseY < this.yPosition + this.height;
+        
+        if(inWindow) {
+            List<String> tooltipStrings = getTooltipStrings();
+            if(tooltipStrings != null) {
+                Util.drawSimpleTooltip(mouseX, mouseY, (int)this.zLevel, tooltipStrings);
+            }
+        }
     }
     
     public List<String> getTooltipStrings() {
-    	return null;
+        return null;
     }
     
     public GuiButtonGeneric setClickListener(Runnable clickListener) {
-    	this.clickListener = clickListener;
-    	return this;
+        this.clickListener = clickListener;
+        return this;
     }
 }
