@@ -18,7 +18,7 @@ public class MCLib {
     
     public static MCLib instance;
     
-    public static Logger LOGGER;
+    public static Logger LOGGER = LogManager.getLogger("mclib()");
     public static final Logger GLOGGER = LogManager.getLogger("mclib");
     
     public static EventBus FML_MASTER;
