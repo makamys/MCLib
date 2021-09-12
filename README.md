@@ -29,16 +29,19 @@ minecraft {
 }
 
 dependencies {
-	shade 'com.github.makamys:MCLib:0.2'
+	shade('com.github.makamys:MCLib:d78ddd3'){
+		exclude group: "codechicken"
+	}
 }
 ```
 
 ## Using the library
 
-The library first has to be initialized by calling `MCLib.init()` in the mod construction phase. You can do this by adding a static block like this to your mod class:
+The library first has to be initialized by calling `MCLib.init()` in the mod construction phase. You can do this like this in your mod class:
 
 ```java
-static {
+@EventHandler
+public void onConstruction(FMLConstructionEvent event) {
 	MCLib.init();
 }
 ```
