@@ -3,7 +3,7 @@
 apply plugin: 'forge'
 
 
-project.version = new File(project.multiproject_structure.toBoolean() ? "${projectDir}/../version.txt" : "${projectDir}/publish/version.txt").getText('UTF-8')
+project.version = new File(project.multiproject_structure.toBoolean() ? "${projectDir}/../version.txt" : "${projectDir}/publish/version.txt").getText('UTF-8').trim()
 
 group = project.group
 archivesBaseName = "${project.archives_base}-${project.minecraft_version}"
@@ -43,13 +43,13 @@ jar {
 
     // embed libraries in jar
     from configurations.embed.collect {
-        exclude '**/LICENSE.txt'
+        exclude '**/LICENSE', '**/LICENSE.txt'
         it.isDirectory() ? it : zipTree(it)
     }
 	
 	configurations.shade.each { dep ->
         from(project.zipTree(dep)){
-            exclude 'META-INF', 'META-INF/**'
+            exclude '**/LICENSE', '**/LICENSE.txt', 'META-INF', 'META-INF/**'
         }
     }
 }
