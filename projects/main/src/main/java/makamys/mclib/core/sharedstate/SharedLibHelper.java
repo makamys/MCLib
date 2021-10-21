@@ -35,6 +35,14 @@ public class SharedLibHelper {
 
     /** Instantiates all static fields of a class with {@link SharedModuleMethodRedirector} proxy objects. */
     public static void shareifyClass(Class<?> clazz) {
+        try {
+            SharedLibHelper.findNewestLibClass(SharedLibHelper.class).getMethod("shareifyClassImpl", Class.class).invoke(null, clazz);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public static void shareifyClassImpl(Class<?> clazz) {
         for(Field f : clazz.getFields()) {
             //if(f.isAnnotationPresent(SharedField.class)) {
                 int mod = f.getModifiers();
