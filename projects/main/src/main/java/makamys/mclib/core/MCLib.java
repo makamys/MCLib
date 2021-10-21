@@ -1,5 +1,8 @@
 package makamys.mclib.core;
 
+import java.util.Map;
+
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -8,7 +11,9 @@ import com.google.common.eventbus.Subscribe;
 
 import cpw.mods.fml.common.LoadController;
 import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.LoaderState;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import makamys.mclib.core.sharedstate.SharedLibHelper;
 
@@ -62,6 +67,7 @@ public class MCLib {
             LOGGER.trace("Running preinit");
             InternalModules.sloppyDepLoader.preInit();
         }
+        TaskQueue.consume(LoaderState.PREINITIALIZATION, instance);
     }
     
 }
