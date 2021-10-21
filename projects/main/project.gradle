@@ -8,6 +8,12 @@ if(!project.hasProperty("test_uc")){
 		sourceSets.main.java.exclude('makamys/mclib/updatecheck/test/**')
 	}
 }
+if(!project.hasProperty("test_ad")){
+	jar {
+		sourceSets.main.java.exclude('makamys/mclib/ext/asetdirector/test/**')
+		sourceSets.main.resources.exclude('asset_director.json')
+	}
+}
 
 archivesBaseName = "${project.modid}-main-all-${project.minecraft_version}"
 
