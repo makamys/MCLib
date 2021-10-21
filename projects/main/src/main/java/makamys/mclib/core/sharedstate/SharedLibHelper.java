@@ -79,7 +79,11 @@ public class SharedLibHelper {
             for(String pkg : existingLibPackages) {
                 try {
                     Class<?> otherMcLibClass = Class.forName(pkg + "." + toRelativeClassName(MCLib.class.getCanonicalName()));
-                    ComparableVersion otherVersion = new ComparableVersion((String)otherMcLibClass.getField("VERSION").get(null));
+                    String otherVersionStr = (String)otherMcLibClass.getField("VERSION").get(null);
+                    if(otherVersionStr.startsWith("@")) {
+                        otherVersionStr = String.valueOf(Integer.MAX_VALUE);
+                    }
+                    ComparableVersion otherVersion = new ComparableVersion(otherVersionStr);
                     if(newestVersion == null || newestVersion.compareTo(otherVersion) < 0) {
                         newestPkg = pkg;
                         newestVersion = otherVersion;

@@ -14,7 +14,7 @@ import makamys.mclib.core.sharedstate.SharedLibHelper;
 
 public class MCLib {
     
-    public static final String VERSION = "0.1.3";
+    public static final String VERSION = "@VERSION@";
     
     public static MCLib instance;
     
