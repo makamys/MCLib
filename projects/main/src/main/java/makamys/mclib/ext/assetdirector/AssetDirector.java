@@ -44,6 +44,7 @@ public class AssetDirector {
                 e.printStackTrace();
             }
         });
+        fetcher.finish();
     }
     
 }
