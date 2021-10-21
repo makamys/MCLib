@@ -2,6 +2,7 @@ package makamys.mclib.ext.assetdirector;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -29,26 +30,28 @@ public class AssetFetcher {
     public void fetchResources(String version, List<String> resources) throws IOException {
         File index = new File(assetsDir, "indexes/" + version + ".json");
         if(!index.exists()) {
-            downloadIndex(version, index);
+            downloadAssetIndex(version, index);
         }
     }
     
-    private void downloadIndex(String version, File dest) throws IOException {
+    private void downloadAssetIndex(String version, File dest) throws IOException {
         if(manifest == null) {
-            manifest = downloadManifest();
+            manifest = downloadJson(MANIFEST_ENDPOINT, JsonObject.class);
         }
         for(JsonElement verElem : manifest.get("versions").getAsJsonArray()) {
             ManifestVersionJSON ver = new Gson().fromJson(verElem, ManifestVersionJSON.class);
             if(ver.id.equals(version)) {
-                FileUtils.copyURLToFile(new URL(ver.url), dest);
+                JsonObject indexJson = downloadJson(ver.url, JsonObject.class);
+                String url = indexJson.get("assetIndex").getAsJsonObject().get("url").getAsString();
+                FileUtils.copyURLToFile(new URL(url), dest);
                 return;
             }
         }
         MCLib.LOGGER.error("Game version " + version + " could not be found in manifest json.");
     }
     
-    private JsonObject downloadManifest() throws IOException {
-        return new Gson().fromJson(new InputStreamReader(new BufferedInputStream(new URL(MANIFEST_ENDPOINT).openStream())), JsonObject.class);
+    private <T> T downloadJson(String url, Class<T> classOfT) throws IOException {
+        return new Gson().fromJson(new InputStreamReader(new BufferedInputStream(new URL(url).openStream())), classOfT);
     }
     
     private static class ManifestVersionJSON {
