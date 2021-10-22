@@ -22,6 +22,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import cpw.mods.fml.common.versioning.ComparableVersion;
+
 import static makamys.mclib.ext.assetdirector.AssetDirector.LOGGER;
 
 public class AssetFetcher {
@@ -185,10 +187,12 @@ public class AssetFetcher {
         public String assetsId;
         private JarFile jar;
         public Set<String> jarContents;
+        public ComparableVersion version;
         
         public VersionIndex(JsonObject json) {
             this.json = json;
             assetsId = json.get("assets").getAsString();
+            this.version = new ComparableVersion(json.get("id").getAsString());
         }
         
         public void loadJar(String version) throws IOException {

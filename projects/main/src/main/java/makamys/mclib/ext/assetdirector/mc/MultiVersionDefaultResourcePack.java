@@ -15,6 +15,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import makamys.mclib.ext.assetdirector.AssetFetcher;
 import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
@@ -26,6 +27,8 @@ import net.minecraft.client.resources.data.IMetadataSerializer;
 import net.minecraft.util.ResourceLocation;
 
 public class MultiVersionDefaultResourcePack implements IResourcePack {
+    
+    private static final ComparableVersion v1_13 = new ComparableVersion("1.13");
     
     private AssetFetcher fetcher;
     
@@ -69,8 +72,8 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         scratch.resLoc = resLoc;
         scratch.namespace = fullDomain.substring(0, firstUnderscore);
         scratch.version = fullDomain.substring(firstUnderscore + 1);
-        scratch.name = convertPath(resLoc.getResourcePath(), scratch.version);
         scratch.vi = fetcher.versionIndexes.get(scratch.version);
+        scratch.name = convertPath(resLoc.getResourcePath(), scratch.vi.version);
         if(scratch.vi.jarContainsFile("assets/minecraft/" + scratch.name)) {
             scratch.isInJar = true;
         } else {
@@ -80,9 +83,10 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         }
     }
     
-    private String convertPath(String path, String version) {
-        if(version.equals("1.17")) { // TODO implement this properly
-            return path.replaceFirst("^textures/blocks/", "textures/block/");
+    private String convertPath(String path, ComparableVersion version) {
+        if(version.compareTo(v1_13) >= 0) {
+            path = path.replaceFirst("^textures/blocks/", "textures/block/");
+            path = path.replaceFirst("^textures/items/", "textures/item/");
         }
         return path;
     }
