@@ -8,16 +8,18 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import makamys.mclib.core.MCLib;
-
 public class AssetDirector {
     
     static final String NS = "AssetDirector";
-    static final File PATH = new File(OsPaths.getDefaultInstallationDir().toFile(), "asset_director"); 
+    static final File PATH = new File(OsPaths.getDefaultInstallationDir().toFile(), "asset_director");
+    static final Logger LOGGER = LogManager.getLogger("AssetDirector");
     
     static AssetDirector instance;
     
@@ -38,9 +40,10 @@ public class AssetDirector {
     public void preInit() {
         AssetDirectorAPI.jsonStreams.forEach((modid, jsonStream) -> {
             try {
+                LOGGER.trace("Fetching asets of " + modid);
                 parseJsonStream(jsonStream);
             } catch(Exception e) {
-                MCLib.LOGGER.error("Failed to parse asset_director.json inside " + modid);
+                LOGGER.error("Failed to parse asset_director.json inside " + modid);
                 e.printStackTrace();
             }
         });

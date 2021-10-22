@@ -19,7 +19,8 @@ import org.apache.commons.io.FileUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import makamys.mclib.core.MCLib;
+
+import static makamys.mclib.ext.assetdirector.AssetDirector.LOGGER;
 
 public class AssetFetcher {
     
@@ -57,14 +58,14 @@ public class AssetFetcher {
                     downloadAsset(hash);
                 }
             } else {
-                MCLib.LOGGER.error("Couldn't find asset " + asset + " inside " + version + " asset index");
+                LOGGER.error("Couldn't find asset " + asset + " inside " + version + " asset index");
             }
         }
     }
     
     private void downloadAsset(String hash) throws IOException {
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
-        FileUtils.copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), new File(rootDir, "assets/objects/" + relPath));
+        copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), new File(rootDir, "assets/objects/" + relPath));
         info.objectIndex.add(hash);
     }
 
@@ -89,11 +90,16 @@ public class AssetFetcher {
             if(ver.id.equals(version)) {
                 JsonObject indexJson = downloadJson(ver.url, JsonObject.class);
                 String url = indexJson.get("assetIndex").getAsJsonObject().get("url").getAsString();
-                FileUtils.copyURLToFile(new URL(url), dest);
+                copyURLToFile(new URL(url), dest);
                 return;
             }
         }
-        MCLib.LOGGER.error("Game version " + version + " could not be found in manifest json.");
+        LOGGER.error("Game version " + version + " could not be found in manifest json.");
+    }
+    
+    private void copyURLToFile(URL source, File destination) throws IOException {
+        LOGGER.trace("Downloading " + source + " to " + destination);
+        FileUtils.copyURLToFile(source, destination);
     }
     
     private <T> T downloadJson(String url, Class<T> classOfT) throws IOException {
