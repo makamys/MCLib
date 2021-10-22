@@ -14,6 +14,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import cpw.mods.fml.common.ProgressManager;
+import cpw.mods.fml.common.ProgressManager.ProgressBar;
 import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 
 public class AssetDirector {
@@ -50,8 +52,11 @@ public class AssetDirector {
         boolean jar;
     }
 
+    @SuppressWarnings("deprecation")
     public void preInit() {
+        ProgressBar bar = ProgressManager.push("AssetDirector - Loading assets", AssetDirectorAPI.jsonStreams.size());
         AssetDirectorAPI.jsonStreams.forEach((modid, jsonStream) -> {
+            bar.step(modid);
             try {
                 LOGGER.trace("Fetching asets of " + modid);
                 parseJsonStream(jsonStream);
@@ -60,6 +65,7 @@ public class AssetDirector {
                 e.printStackTrace();
             }
         });
+        ProgressManager.pop(bar);
         
         try {
             fetcher.fetchForAllVersions(Arrays.asList("minecraft/sounds.json"));
