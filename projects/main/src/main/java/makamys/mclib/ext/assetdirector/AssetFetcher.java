@@ -109,13 +109,10 @@ public class AssetFetcher {
             }
             assetIndexes.put(vi.assetsId, new AssetIndex(loadJson(assetIndex, JsonObject.class)));
         }
-        
-        File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
-        if(!clientJar.exists()) {
-            String url = vi.json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
-            copyURLToFile(new URL(url), clientJar);   
-        }
-        vi.setJarFile(clientJar);
+    }
+    
+    public void loadJar(String version) throws IOException {
+        versionIndexes.get(version).loadJar(version);
     }
     
     private void downloadVersionIndex(String version, File dest) throws IOException {
@@ -177,7 +174,7 @@ public class AssetFetcher {
         }
     }
     
-    public static class VersionIndex {
+    public class VersionIndex {
         public JsonObject json;
         public String assetsId;
         private JarFile jar;
@@ -188,13 +185,21 @@ public class AssetFetcher {
             assetsId = json.get("assets").getAsString();
         }
         
-        public void setJarFile(File jarFile) throws IOException {
-            this.jar = new JarFile(jarFile);
+        public void loadJar(String version) throws IOException {
+            if(jar != null) return;
+            
+            File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
+            if(!clientJar.exists()) {
+                String url = json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
+                copyURLToFile(new URL(url), clientJar);   
+            }
+            
+            this.jar = new JarFile(clientJar);
             jarContents = jar.stream().map(e -> e.getName()).collect(Collectors.toSet());
         }
         
         public boolean jarContainsFile(String path) {
-            return jarContents.contains(path);
+            return jarContents != null && jarContents.contains(path);
         }
         
         public InputStream getJarFileStream(String path) throws IOException {

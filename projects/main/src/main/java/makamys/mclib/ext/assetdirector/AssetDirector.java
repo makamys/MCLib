@@ -5,10 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,8 +34,20 @@ public class AssetDirector {
         JsonObject json = new Gson().fromJson(new InputStreamReader(jsonStream), JsonObject.class);
         JsonObject assets = json.get("assets").getAsJsonObject();
         for(Entry<String, JsonElement> entry : assets.entrySet()) {
-            fetcher.fetchResources(entry.getKey(), StreamSupport.stream(entry.getValue().getAsJsonArray().spliterator(), false).map(e -> e.getAsString()).collect(Collectors.toList()));
+            String version = entry.getKey();
+            VersionEntryJSON entryObj = new Gson().fromJson(entry.getValue(), VersionEntryJSON.class);
+            if(entryObj.objects != null) {
+                fetcher.fetchResources(version, entryObj.objects);
+            }
+            if(entryObj.jar) {
+                fetcher.loadJar(version);
+            }
         }
+    }
+    
+    private static class VersionEntryJSON {
+        List<String> objects;
+        boolean jar;
     }
 
     public void preInit() {
