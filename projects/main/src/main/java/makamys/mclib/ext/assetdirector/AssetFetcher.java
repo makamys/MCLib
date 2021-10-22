@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,10 +26,16 @@ public class AssetFetcher {
     
     private final static String MANIFEST_ENDPOINT = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     private final static String RESOURCES_ENDPOINT = "http://resources.download.minecraft.net";
+    
+    private final static StringTemplate ASSET_INDEX_PATH = new StringTemplate("assets/indexes/{}.json");
+    private final static StringTemplate CLIENT_JAR_PATH = new StringTemplate("versions/{}/{}.jar");
+    private final static StringTemplate VERSION_INDEX_PATH = new StringTemplate("versions/{}/{}.json");
+    
     private final File INFO_JSON;
     
     private static JsonObject manifest;
     private InfoJSON info;
+    public Map<String, VersionIndex> versionIndexes = new HashMap<>();
     public Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
     public File rootDir;
@@ -51,7 +56,9 @@ public class AssetFetcher {
     }
 
     public void fetchResources(String version, List<String> resources) throws IOException {
-        AssetIndex assetIndex = getAssetIndex(version);
+        loadVersionDeps(version);
+        VersionIndex vi = versionIndexes.get(version);
+        AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
         for(String asset : resources) {
             String hash = assetIndex.nameToHash.get(asset);
             if(hash != null) {
@@ -75,29 +82,44 @@ public class AssetFetcher {
         copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), new File(rootDir, "assets/objects/" + relPath));
         info.objectIndex.add(hash);
     }
-
-    private AssetIndex getAssetIndex(String version) throws IOException {
-        AssetIndex assetIndex = assetIndexes.get(version);
-        if(assetIndex == null) {
-            File index = new File(rootDir, "assets/indexes/" + version + ".json");
-            if(!index.exists()) {
-                downloadAssetIndex(version, index);
-            }
-            assetIndexes.put(version, assetIndex = new AssetIndex(loadJson(index, JsonObject.class)));
-        }
-        return assetIndex;
-    }
     
-    private void downloadAssetIndex(String version, File dest) throws IOException {
+    /** Loads manifest, version index, asset index and client jar for the given version as needed. */
+    private void loadVersionDeps(String version) throws IOException {
+        if(versionIndexes.containsKey(version)) return;
+        
         if(manifest == null) {
             manifest = downloadJson(MANIFEST_ENDPOINT, JsonObject.class);
         }
+        
+        // TODO redownload stuff if timestamp in manifest changes?
+        File indexJson = new File(rootDir, VERSION_INDEX_PATH.get(version));
+        if(!indexJson.exists()) {
+            downloadVersionIndex(version, indexJson);
+        }
+        VersionIndex vi = new VersionIndex(loadJson(indexJson, JsonObject.class));
+        versionIndexes.put(version, vi);
+        
+        if(!assetIndexes.containsKey(vi.assetsId)) {
+            File assetIndex = new File(rootDir, ASSET_INDEX_PATH.get(vi.assetsId));
+            if(!assetIndex.exists()) {
+                String url = vi.json.get("assetIndex").getAsJsonObject().get("url").getAsString();
+                copyURLToFile(new URL(url), assetIndex);
+            }
+            assetIndexes.put(vi.assetsId, new AssetIndex(loadJson(assetIndex, JsonObject.class)));
+        }
+        
+        File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
+        if(!clientJar.exists()) {
+            String url = vi.json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
+            copyURLToFile(new URL(url), clientJar);
+        }
+    }
+    
+    private void downloadVersionIndex(String version, File dest) throws IOException {
         for(JsonElement verElem : manifest.get("versions").getAsJsonArray()) {
             ManifestVersionJSON ver = new Gson().fromJson(verElem, ManifestVersionJSON.class);
             if(ver.id.equals(version)) {
-                JsonObject indexJson = downloadJson(ver.url, JsonObject.class);
-                String url = indexJson.get("assetIndex").getAsJsonObject().get("url").getAsString();
-                copyURLToFile(new URL(url), dest);
+                copyURLToFile(new URL(ver.url), dest);
                 return;
             }
         }
@@ -151,12 +173,34 @@ public class AssetFetcher {
             });
         }
     }
+    
+    public static class VersionIndex {
+        public JsonObject json;
+        public String assetsId;
+        
+        public VersionIndex(JsonObject json) {
+            this.json = json;
+            assetsId = json.get("assets").getAsString();
+        }
+    }
 
     public void finish() {
         try(FileWriter writer = new FileWriter(INFO_JSON)){
             new Gson().toJson(info, writer);
         } catch(IOException e) {
             e.printStackTrace();
+        }
+    }
+    
+    private static final class StringTemplate {
+        private String template;
+        
+        public StringTemplate(String template){
+            this.template = template;
+        }
+        
+        public String get(String replacement) {
+            return template.replaceAll("\\{\\}", replacement);
         }
     }
     
