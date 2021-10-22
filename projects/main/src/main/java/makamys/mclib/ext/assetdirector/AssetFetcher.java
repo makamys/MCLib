@@ -42,6 +42,8 @@ public class AssetFetcher {
     
     public File rootDir;
     
+    private boolean printedDownloading;
+    
     public AssetFetcher(File rootDir) {
         this.rootDir = rootDir;
         INFO_JSON = new File(rootDir, "info.json");
@@ -127,6 +129,10 @@ public class AssetFetcher {
     }
     
     private void copyURLToFile(URL source, File destination) throws IOException {
+        if(!printedDownloading) {
+            LOGGER.info("Downloading resources, this may take a while...");
+            printedDownloading = true;
+        }
         LOGGER.trace("Downloading " + source + " to " + destination);
         FileUtils.copyURLToFile(source, destination);
     }
