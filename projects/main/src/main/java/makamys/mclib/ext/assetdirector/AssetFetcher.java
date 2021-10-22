@@ -64,6 +64,12 @@ public class AssetFetcher {
         }
     }
     
+    public void fetchForAllVersions(List<String> resources) throws IOException {
+        for(String v : assetIndexes.keySet()) {
+            fetchResources(v, resources);
+        }
+    }
+    
     private void downloadAsset(String hash) throws IOException {
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
         copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), new File(rootDir, "assets/objects/" + relPath));

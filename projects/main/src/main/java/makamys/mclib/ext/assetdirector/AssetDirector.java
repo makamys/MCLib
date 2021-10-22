@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -49,6 +50,13 @@ public class AssetDirector {
                 e.printStackTrace();
             }
         });
+        
+        try {
+            fetcher.fetchForAllVersions(Arrays.asList("minecraft/sounds.json"));
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        
         fetcher.finish();
         MultiVersionDefaultResourcePack.inject(fetcher);
     }
