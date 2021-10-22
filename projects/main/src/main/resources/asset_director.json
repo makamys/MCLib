@@ -1,7 +1,8 @@
 {
 	"assets": {
 		"1.17": [
-			"minecraft/sounds/records/pigstep.ogg"
+			"minecraft/sounds/records/pigstep.ogg",
+      "minecraft/textures/block/gold_block.png"
 		]
 	}
 }

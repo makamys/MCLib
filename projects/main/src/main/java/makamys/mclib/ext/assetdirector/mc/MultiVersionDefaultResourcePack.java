@@ -18,6 +18,7 @@ import com.google.gson.JsonObject;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import makamys.mclib.ext.assetdirector.AssetFetcher;
 import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
+import makamys.mclib.ext.assetdirector.AssetFetcher.VersionIndex;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IResourcePack;
 import net.minecraft.client.resources.data.IMetadataSection;
@@ -41,7 +42,12 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     
     public InputStream getInputStream(ResourceLocation resLoc) throws IOException {
         parseName(resLoc);
-        InputStream is = fetcher.getAssetInputStream(scratch.hash);
+        InputStream is = null;
+        if(!scratch.isInJar) {
+            is = fetcher.getAssetInputStream(scratch.hash);
+        } else {
+            is = scratch.vi.getJarFileStream("assets/minecraft/" + scratch.name);
+        }
         if(scratch.namespace.equals("minecraft") && scratch.name.equals("sounds.json")) {
             JsonObject obj = new Gson().fromJson(new InputStreamReader(is), JsonObject.class);
             stripUnusedSounds(obj, fetcher.assetIndexes.get(scratch.version));
@@ -52,7 +58,7 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
 
     public boolean resourceExists(ResourceLocation resLoc) {
         parseName(resLoc);
-        return fetcher.getObjectIndex().contains(scratch.hash);
+        return scratch.isInJar ? true : fetcher.getObjectIndex().contains(scratch.hash);
     }
     
     private void parseName(ResourceLocation resLoc){
@@ -63,9 +69,22 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         scratch.resLoc = resLoc;
         scratch.namespace = fullDomain.substring(0, firstUnderscore);
         scratch.version = fullDomain.substring(firstUnderscore + 1);
-        scratch.name = resLoc.getResourcePath();
-        scratch.hash = fetcher.assetIndexes.get(fetcher.versionIndexes.get(scratch.version).assetsId).nameToHash
-                .get(scratch.namespace + "/" + scratch.name);
+        scratch.name = convertPath(resLoc.getResourcePath(), scratch.version);
+        scratch.vi = fetcher.versionIndexes.get(scratch.version);
+        if(scratch.vi.jarContainsFile("assets/minecraft/" + scratch.name)) {
+            scratch.isInJar = true;
+        } else {
+            scratch.isInJar = false;
+            scratch.hash = fetcher.assetIndexes.get(scratch.vi.assetsId).nameToHash
+                    .get(scratch.namespace + "/" + scratch.name);
+        }
+    }
+    
+    private String convertPath(String path, String version) {
+        if(version.equals("1.17")) { // TODO implement this properly
+            return path.replaceFirst("^textures/blocks/", "textures/block/");
+        }
+        return path;
     }
 
     @Override
@@ -110,6 +129,8 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         String namespace;
         String version;
         String name;
+        VersionIndex vi;
+        boolean isInJar;
         String hash;
     }
 }

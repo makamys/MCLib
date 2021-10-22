@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 
@@ -111,8 +113,9 @@ public class AssetFetcher {
         File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
         if(!clientJar.exists()) {
             String url = vi.json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
-            copyURLToFile(new URL(url), clientJar);
+            copyURLToFile(new URL(url), clientJar);   
         }
+        vi.setJarFile(clientJar);
     }
     
     private void downloadVersionIndex(String version, File dest) throws IOException {
@@ -177,10 +180,25 @@ public class AssetFetcher {
     public static class VersionIndex {
         public JsonObject json;
         public String assetsId;
+        private JarFile jar;
+        public Set<String> jarContents;
         
         public VersionIndex(JsonObject json) {
             this.json = json;
             assetsId = json.get("assets").getAsString();
+        }
+        
+        public void setJarFile(File jarFile) throws IOException {
+            this.jar = new JarFile(jarFile);
+            jarContents = jar.stream().map(e -> e.getName()).collect(Collectors.toSet());
+        }
+        
+        public boolean jarContainsFile(String path) {
+            return jarContents.contains(path);
+        }
+        
+        public InputStream getJarFileStream(String path) throws IOException {
+            return jar.getInputStream(jar.getEntry(path));
         }
     }
 
