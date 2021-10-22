@@ -58,7 +58,7 @@ public class AssetDirector {
         AssetDirectorAPI.jsonStreams.forEach((modid, jsonStream) -> {
             bar.step(modid);
             try {
-                LOGGER.trace("Fetching asets of " + modid);
+                LOGGER.trace("Fetching assets of " + modid);
                 parseJsonStream(jsonStream);
             } catch(Exception e) {
                 LOGGER.error("Failed to parse asset_director.json inside " + modid);
