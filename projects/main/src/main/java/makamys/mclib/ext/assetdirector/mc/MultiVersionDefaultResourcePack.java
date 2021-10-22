@@ -64,7 +64,8 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         scratch.namespace = fullDomain.substring(0, firstUnderscore);
         scratch.version = fullDomain.substring(firstUnderscore + 1);
         scratch.name = resLoc.getResourcePath();
-        scratch.hash = fetcher.assetIndexes.get(scratch.version).nameToHash.get(scratch.namespace + "/" + scratch.name);
+        scratch.hash = fetcher.assetIndexes.get(fetcher.versionIndexes.get(scratch.version).assetsId).nameToHash
+                .get(scratch.namespace + "/" + scratch.name);
     }
 
     @Override
