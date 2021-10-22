@@ -31,11 +31,11 @@ public class AssetFetcher {
     private InfoJSON info;
     private Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
-    private File assetsDir;
+    private File rootDir;
     
-    public AssetFetcher(File assetsDir) {
-        this.assetsDir = assetsDir;
-        INFO_JSON = new File(assetsDir, "info.json");
+    public AssetFetcher(File rootDir) {
+        this.rootDir = rootDir;
+        INFO_JSON = new File(rootDir, "info.json");
         if(INFO_JSON.exists()) {
             try {
                 info = loadJson(INFO_JSON, InfoJSON.class);
@@ -64,14 +64,14 @@ public class AssetFetcher {
     
     private void downloadAsset(String hash) throws IOException {
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
-        FileUtils.copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), new File(assetsDir, "objects/" + relPath));
+        FileUtils.copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), new File(rootDir, "assets/objects/" + relPath));
         info.objectIndex.add(hash);
     }
 
     private AssetIndex getAssetIndex(String version) throws IOException {
         AssetIndex assetIndex = assetIndexes.get(version);
         if(assetIndex == null) {
-            File index = new File(assetsDir, "indexes/" + version + ".json");
+            File index = new File(rootDir, "assets/indexes/" + version + ".json");
             if(!index.exists()) {
                 downloadAssetIndex(version, index);
             }
