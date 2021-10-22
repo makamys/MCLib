@@ -1,19 +1,24 @@
 package makamys.mclib.ext.assetdirector.mc;
 
 import java.awt.image.BufferedImage;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import makamys.mclib.ext.assetdirector.AssetFetcher;
+import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.AbstractResourcePack;
 import net.minecraft.client.resources.IResourcePack;
 import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.client.resources.data.IMetadataSerializer;
@@ -36,7 +41,13 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     
     public InputStream getInputStream(ResourceLocation resLoc) throws IOException {
         parseName(resLoc);
-        return fetcher.getAssetInputStream(scratch.hash);
+        InputStream is = fetcher.getAssetInputStream(scratch.hash);
+        if(scratch.namespace.equals("minecraft") && scratch.name.equals("sounds.json")) {
+            JsonObject obj = new Gson().fromJson(new InputStreamReader(is), JsonObject.class);
+            stripUnusedSounds(obj, fetcher.assetIndexes.get(scratch.version));
+            return IOUtils.toInputStream(new Gson().toJson(obj));
+        }
+        return is;
     }
 
     public boolean resourceExists(ResourceLocation resLoc) {
@@ -76,6 +87,21 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     public static void inject(AssetFetcher fetcher) {
         List defaultResourcePacks = ReflectionHelper.getPrivateValue(Minecraft.class, Minecraft.getMinecraft(), "defaultResourcePacks");
         defaultResourcePacks.add(new MultiVersionDefaultResourcePack(fetcher));
+    }
+    
+    private void stripUnusedSounds(JsonObject soundsJSON, AssetIndex index) {
+        soundsJSON.entrySet().removeIf(sound -> {
+            JsonArray sounds = sound.getValue().getAsJsonObject().get("sounds").getAsJsonArray();
+            for(Iterator<JsonElement> it = sounds.iterator(); it.hasNext();) {
+                JsonElement soundElem = it.next();
+                String name = (soundElem.isJsonPrimitive() && soundElem.getAsJsonPrimitive().isString()) 
+                        ? soundElem.getAsString() : soundElem.getAsJsonObject().get("name").getAsString();
+                if(!fetcher.getObjectIndex().contains(index.nameToHash.get("minecraft/sounds/" + name + ".ogg"))){
+                    it.remove();
+                }
+            }
+            return sounds.size() == 0;
+        });
     }
     
     private static class NameParserScratch {
