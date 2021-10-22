@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,9 +31,9 @@ public class AssetFetcher {
     
     private static JsonObject manifest;
     private InfoJSON info;
-    private Map<String, AssetIndex> assetIndexes = new HashMap<>();
+    public Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
-    private File rootDir;
+    public File rootDir;
     
     public AssetFetcher(File rootDir) {
         this.rootDir = rootDir;
@@ -114,6 +115,14 @@ public class AssetFetcher {
         return new Gson().fromJson(new InputStreamReader(new BufferedInputStream(stream)), classOfT);
     }
     
+    public Set<String> getObjectIndex(){
+        return info.objectIndex;
+    }
+    
+    public InputStream getAssetInputStream(String hash) throws IOException {
+        return new BufferedInputStream(new FileInputStream(new File(rootDir, "assets/objects/" + hash.substring(0, 2) + "/" + hash)));
+    }
+    
     private static class ManifestVersionJSON {
         String id;
         String url;
@@ -123,9 +132,9 @@ public class AssetFetcher {
         Set<String> objectIndex = new HashSet<>();
     }
     
-    private static class AssetIndex {
-        JsonObject json;
-        Map<String, String> nameToHash = new HashMap<>();
+    public static class AssetIndex {
+        public JsonObject json;
+        public Map<String, String> nameToHash = new HashMap<>();
         
         public AssetIndex(JsonObject json) {
             this.json = json;

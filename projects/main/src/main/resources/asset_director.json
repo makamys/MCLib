@@ -1,7 +1,8 @@
 {
 	"assets": {
 		"1.17": [
-			"minecraft/sounds/music/game/nether/soulsand_valley/so_below.ogg"
+			"minecraft/sounds/records/pigstep.ogg",
+      "minecraft/sounds.json"
 		]
 	}
 }

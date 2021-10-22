@@ -15,6 +15,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
+
 public class AssetDirector {
     
     static final String NS = "AssetDirector";
@@ -48,6 +50,7 @@ public class AssetDirector {
             }
         });
         fetcher.finish();
+        MultiVersionDefaultResourcePack.inject(fetcher);
     }
     
 }
