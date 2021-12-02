@@ -25,7 +25,7 @@ repositories {
 }
 
 minecraft {
-	srgExtra "PK: makamys/mclib <your mod's package>/lib/makamys/mclib"
+	srgExtra "PK: makamys/mclib YOUR/MOD/PACKAGE/repackage/makamys/mclib"
 }
 
 dependencies {
@@ -34,6 +34,7 @@ dependencies {
 	}
 }
 ```
+(This requires a `shade` configuration to work, see [the above link](http://web.archive.org/web/20150403035341/http://forgegradle.readthedocs.org/en/FG_1.2/user-guide/shading/).)
 
 ## Using the library
 
