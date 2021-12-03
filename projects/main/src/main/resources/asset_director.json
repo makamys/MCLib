@@ -4,7 +4,7 @@
       "soundEvents": [
         {
           "name": "music_disc.pigstep",
-          "category": "music"
+          "category": "record"
         }
       ],
       "jar": true
