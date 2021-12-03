@@ -8,6 +8,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 import org.apache.commons.io.IOUtils;
 
 import com.google.gson.Gson;
@@ -17,6 +19,7 @@ import com.google.gson.JsonObject;
 
 import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.ReflectionHelper;
+import makamys.mclib.ext.assetdirector.AssetDirector;
 import makamys.mclib.ext.assetdirector.AssetFetcher;
 import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
 import makamys.mclib.ext.assetdirector.AssetFetcher.VersionIndex;
@@ -26,16 +29,20 @@ import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.client.resources.data.IMetadataSerializer;
 import net.minecraft.util.ResourceLocation;
 
+import static makamys.mclib.ext.assetdirector.AssetDirector.SOUNDS_JSON_REQUESTED;
+
 public class MultiVersionDefaultResourcePack implements IResourcePack {
     
     private static final ComparableVersion v1_13 = new ComparableVersion("1.13");
     
+    private AssetDirector assetDirector;
     private AssetFetcher fetcher;
     
     private NameParserScratch scratch = new NameParserScratch();
     
-    public MultiVersionDefaultResourcePack(AssetFetcher fetcher) {
-        this.fetcher = fetcher;
+    public MultiVersionDefaultResourcePack(AssetDirector assetDirector) {
+        this.assetDirector = assetDirector;
+        this.fetcher = assetDirector.getFetcher();
     }
 
     @Override
@@ -52,9 +59,11 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
             is = scratch.vi.getJarFileStream("assets/minecraft/" + scratch.name);
         }
         if(scratch.namespace.equals("minecraft") && scratch.name.equals("sounds.json")) {
-            JsonObject obj = new Gson().fromJson(new InputStreamReader(is), JsonObject.class);
-            stripUnusedSounds(obj, fetcher.assetIndexes.get(scratch.version));
-            return IOUtils.toInputStream(new Gson().toJson(obj));
+            JsonObject obj = assetDirector.getMassagedSoundJson(scratch.version);
+            if(obj != null) {
+                stripUnusedSounds(obj, fetcher.assetIndexes.get(scratch.version));
+                return IOUtils.toInputStream(new Gson().toJson(obj));
+            }
         }
         return is;
     }
@@ -108,24 +117,19 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         return "AssetDirector";
     }
     
-    public static void inject(AssetFetcher fetcher) {
+    public static void inject(AssetDirector assetDirector) {
         List defaultResourcePacks = ReflectionHelper.getPrivateValue(Minecraft.class, Minecraft.getMinecraft(), "defaultResourcePacks");
-        defaultResourcePacks.add(new MultiVersionDefaultResourcePack(fetcher));
+        defaultResourcePacks.add(new MultiVersionDefaultResourcePack(assetDirector));
     }
     
     private void stripUnusedSounds(JsonObject soundsJSON, AssetIndex index) {
-        soundsJSON.entrySet().removeIf(sound -> {
-            JsonArray sounds = sound.getValue().getAsJsonObject().get("sounds").getAsJsonArray();
-            for(Iterator<JsonElement> it = sounds.iterator(); it.hasNext();) {
-                JsonElement soundElem = it.next();
-                String name = (soundElem.isJsonPrimitive() && soundElem.getAsJsonPrimitive().isString()) 
-                        ? soundElem.getAsString() : soundElem.getAsJsonObject().get("name").getAsString();
-                if(!fetcher.getObjectIndex().contains(index.nameToHash.get("minecraft/sounds/" + name + ".ogg"))){
-                    it.remove();
-                }
-            }
-            return sounds.size() == 0;
-        });
+        if(soundsJSON.has(SOUNDS_JSON_REQUESTED)) {
+            Set<String> requested = 
+                    StreamSupport.stream(soundsJSON.getAsJsonArray(SOUNDS_JSON_REQUESTED).spliterator(), false)
+                    .map(e -> e.getAsString()).collect(Collectors.toSet());
+            soundsJSON.remove(SOUNDS_JSON_REQUESTED);
+            soundsJSON.entrySet().removeIf(sound -> !requested.contains(sound.getKey()));
+        }
     }
     
     private static class NameParserScratch {

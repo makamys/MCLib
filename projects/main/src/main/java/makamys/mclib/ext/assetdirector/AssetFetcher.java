@@ -159,6 +159,20 @@ public class AssetFetcher {
         return new BufferedInputStream(new FileInputStream(new File(rootDir, "assets/objects/" + hash.substring(0, 2) + "/" + hash)));
     }
     
+    public InputStream getAssetInputStream(String version, String path) throws IOException {
+        return getAssetInputStream(assetIndexes.get(versionToAssetsId(version)).nameToHash.get(path));
+    }
+    
+    public String versionToAssetsId(String version) {
+        try {
+            loadVersionDeps(version);
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        
+        return versionIndexes.get(version).assetsId;
+    }
+    
     private static class ManifestVersionJSON {
         String id;
         String url;
