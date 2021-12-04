@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -132,16 +134,27 @@ public class AssetDirector {
     @SuppressWarnings("deprecation")
     public void preInit() {
         ProgressBar bar = ProgressManager.push("AssetDirector - Loading assets", AssetDirectorAPI.jsonStreams.size());
-        AssetDirectorAPI.jsonStreams.forEach((modid, jsonStream) -> {
+        boolean connectionOK = true;
+        
+        for(Entry<String, InputStream> entry : AssetDirectorAPI.jsonStreams.entrySet()) {
+            String modid = entry.getKey();
+            InputStream jsonStream = entry.getValue();
+            
             bar.step(modid);
-            try {
-                LOGGER.trace("Fetching assets of " + modid);
-                parseJsonStream(jsonStream, modid);
-            } catch(Exception e) {
-                LOGGER.error("Failed to parse asset_director.json inside " + modid);
-                e.printStackTrace();
+            if(connectionOK) {
+                try {
+                    LOGGER.trace("Fetching assets of " + modid);
+                    parseJsonStream(jsonStream, modid);
+                } catch(Exception e) {
+                    LOGGER.error("Failed to fetch assets of " + modid);
+                    if(e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
+                        LOGGER.error("Aborting further asset downloads since we seem to be offline.");
+                        connectionOK = false;
+                    }
+                    e.printStackTrace();
+                }
             }
-        });
+        }
         ProgressManager.pop(bar);
         
         fetcher.finish();
