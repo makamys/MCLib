@@ -10,7 +10,7 @@ if(!project.hasProperty("test_uc")){
 }
 if(!project.hasProperty("test_ad")){
 	jar {
-		sourceSets.main.java.exclude('makamys/mclib/ext/asetdirector/test/**')
+		sourceSets.main.java.exclude('makamys/mclib/ext/assetdirector/test/**')
 		sourceSets.main.resources.exclude('asset_director.json')
 	}
 }
