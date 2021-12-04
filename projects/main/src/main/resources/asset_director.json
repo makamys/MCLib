@@ -8,6 +8,11 @@
         {
           "name": "music_disc.pigstep",
           "category": "record"
+        },
+        {
+          "name": "music_disc.pigstep",
+          "category": "music",
+          "//": "Test of duplicate sound event"
         }
       ],
       "jar": true
