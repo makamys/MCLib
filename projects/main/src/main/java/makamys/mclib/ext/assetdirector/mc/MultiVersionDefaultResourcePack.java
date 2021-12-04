@@ -24,7 +24,9 @@ import makamys.mclib.ext.assetdirector.AssetFetcher;
 import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
 import makamys.mclib.ext.assetdirector.AssetFetcher.VersionIndex;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourcePack;
+import net.minecraft.client.resources.SimpleReloadableResourceManager;
 import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.client.resources.data.IMetadataSerializer;
 import net.minecraft.util.ResourceLocation;
@@ -118,8 +120,13 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     }
     
     public static void inject(AssetDirector assetDirector) {
+        IResourcePack multiDefaultPack = new MultiVersionDefaultResourcePack(assetDirector);
         List defaultResourcePacks = ReflectionHelper.getPrivateValue(Minecraft.class, Minecraft.getMinecraft(), "defaultResourcePacks");
-        defaultResourcePacks.add(new MultiVersionDefaultResourcePack(assetDirector));
+        defaultResourcePacks.add(multiDefaultPack);
+        IResourceManager resMan = Minecraft.getMinecraft().getResourceManager();
+        if(resMan instanceof SimpleReloadableResourceManager) {
+            ((SimpleReloadableResourceManager)resMan).reloadResourcePack(multiDefaultPack);
+        }
     }
     
     private void stripUnusedSounds(JsonObject soundsJSON, AssetIndex index) {
