@@ -35,6 +35,8 @@ public class AssetFetcher {
     private final static StringTemplate CLIENT_JAR_PATH = new StringTemplate("versions/{}/{}.jar");
     private final static StringTemplate VERSION_INDEX_PATH = new StringTemplate("versions/{}/{}.json");
     
+    private static final int DOWNLOAD_TIMEOUT = 10_000; // ms
+    
     private final File INFO_JSON;
     
     private static JsonObject manifest;
@@ -136,7 +138,7 @@ public class AssetFetcher {
             printedDownloading = true;
         }
         LOGGER.trace("Downloading " + source + " to " + destination);
-        FileUtils.copyURLToFile(source, destination);
+        FileUtils.copyURLToFile(source, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
     }
     
     private <T> T downloadJson(String url, Class<T> classOfT) throws IOException {
