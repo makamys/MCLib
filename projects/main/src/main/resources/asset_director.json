@@ -1,6 +1,9 @@
 {
   "assets": {
     "1.17": {
+      "objects": [
+        "minecraft/lang/ms_my.json"
+      ],
       "soundEvents": [
         {
           "name": "music_disc.pigstep",
