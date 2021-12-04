@@ -91,7 +91,7 @@ public class AssetDirector {
                     objects.add("minecraft/sounds/" + soundPath + ".ogg");
                 }
                 if(event.has("category")) {
-                    String originalCategory = event.get(category).getAsString();
+                    String originalCategory = event.get("category").getAsString();
                     if(!originalCategory.equals(category)) {
                         LOGGER.warn("Ignoring mod " + modid + "'s category request (" + category + ") for sound event " + name + " that already has one (" + originalCategory + ").");
                     }
