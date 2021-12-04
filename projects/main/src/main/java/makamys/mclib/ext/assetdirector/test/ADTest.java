@@ -12,6 +12,7 @@ import com.google.gson.JsonObject;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import makamys.mclib.core.MCLib;
+import makamys.mclib.ext.assetdirector.ADJsonHelper;
 import makamys.mclib.ext.assetdirector.AssetDirectorAPI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
@@ -25,7 +26,14 @@ public class ADTest {
     @EventHandler
     public void onConstruction(FMLConstructionEvent event) {
         MCLib.init();
+        
+        // asset_director.json test
         AssetDirectorAPI.register();
+        
+        // dynamic json test
+        JsonObject adJson = new JsonObject();
+        ADJsonHelper.addSoundEvent(adJson, "1.17", "entity.axolotl.attack", "neutral");
+        AssetDirectorAPI.register(adJson);
     }
     
     @EventHandler
