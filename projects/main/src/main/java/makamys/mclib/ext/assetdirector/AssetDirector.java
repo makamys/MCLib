@@ -75,13 +75,12 @@ public class AssetDirector {
                 VersionIndex vi = fetcher.versionIndexes.get(version);
                 AssetIndex assetIndex = fetcher.assetIndexes.get(vi.assetsId);
                 String hash = assetIndex.nameToHash.get(asset);
-                if(hash == null || fetcher.info.objectIndex.contains(hash)) {
-                	downloadCount--;
+                if(hash != null && !fetcher.info.objectIndex.contains(hash)) {
+                	downloadCount++;
                 }
             }
             
             downloadMap.put(version, objects);
-            downloadCount += objects.size();
         }
         
         if(downloadCount > 0) {
