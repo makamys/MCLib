@@ -22,7 +22,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import cpw.mods.fml.common.ProgressManager.ProgressBar;
 import cpw.mods.fml.common.versioning.ComparableVersion;
 
 import static makamys.mclib.ext.assetdirector.AssetDirector.LOGGER;
@@ -64,29 +63,35 @@ public class AssetFetcher {
         }
     }
 
-    public void fetchResources(String version, List<String> resources) throws IOException {
+    public void fetchAsset(String version, String asset) throws IOException {
         loadVersionDeps(version);
         VersionIndex vi = versionIndexes.get(version);
         AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
-        for(String asset : resources) {
-            String hash = assetIndex.nameToHash.get(asset);
-            if(hash != null) {
-                if(!info.objectIndex.contains(hash)) {
-                	if(AssetDirector.instance.downloadBar != null) {
-                		String[] assetPathSplit = asset.split("/");
-                		AssetDirector.instance.downloadBar.step(assetPathSplit[assetPathSplit.length - 1]);
-                	}
-                    downloadAsset(hash);
-                }
-            } else {
-                LOGGER.error("Couldn't find asset " + asset + " inside " + version + " asset index");
-            }
+        String hash = assetIndex.nameToHash.get(asset);
+        if(hash != null) {
+            downloadAsset(hash);
         }
     }
     
-    public void fetchForAllVersions(List<String> resources) throws IOException {
+    public boolean needsFetchResource(String version, String asset) {
+        return needsFetchAsset(version, asset, false);
+    }
+    
+    public boolean needsFetchAsset(String version, String asset, boolean printErrors) {
+        VersionIndex vi = versionIndexes.get(version);
+        AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
+        String hash = assetIndex.nameToHash.get(asset);
+        if(hash != null) {
+            return !info.objectIndex.contains(hash);
+        } else if(printErrors) {
+            LOGGER.error("Couldn't find asset " + asset + " inside " + version + " asset index");
+        }
+        return false;
+    }
+    
+    public void fetchForAllVersions(String asset) throws IOException {
         for(String v : assetIndexes.keySet()) {
-            fetchResources(v, resources);
+            fetchAsset(v, asset);
         }
     }
     
@@ -97,7 +102,7 @@ public class AssetFetcher {
     }
     
     /** Loads manifest, version index, asset index and client jar for the given version as needed. */
-    private void loadVersionDeps(String version) throws IOException {
+    public void loadVersionDeps(String version) throws IOException {
         if(versionIndexes.containsKey(version)) return;
         
         if(manifest == null) {
@@ -122,8 +127,16 @@ public class AssetFetcher {
         }
     }
     
+    public void fetchJar(String version) throws IOException {
+        versionIndexes.get(version).fetchJar(version);
+    }
+    
     public void loadJar(String version) throws IOException {
         versionIndexes.get(version).loadJar(version);
+    }
+    
+    public boolean needsFetchJar(String version) {
+        return !new File(rootDir, AssetFetcher.CLIENT_JAR_PATH.get(version)).exists();
     }
     
     private void downloadVersionIndex(String version, File dest) throws IOException {
@@ -216,17 +229,19 @@ public class AssetFetcher {
             this.version = new ComparableVersion(json.get("id").getAsString());
         }
         
+        public void fetchJar(String version) throws IOException {
+            if(jar != null) return;
+            
+            File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
+            
+            String url = json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
+            copyURLToFile(new URL(url), clientJar);   
+        }
+        
         public void loadJar(String version) throws IOException {
             if(jar != null) return;
             
             File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
-            if(!clientJar.exists()) {
-            	if(AssetDirector.instance.downloadBar != null) {
-            		AssetDirector.instance.downloadBar.step("minecraft.jar, version " + version);
-            	}
-                String url = json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
-                copyURLToFile(new URL(url), clientJar);   
-            }
             
             this.jar = new JarFile(clientJar);
             jarContents = jar.stream().map(e -> e.getName()).collect(Collectors.toSet());

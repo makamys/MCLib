@@ -7,12 +7,11 @@ import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,8 +24,6 @@ import com.google.gson.JsonPrimitive;
 
 import cpw.mods.fml.common.ProgressManager;
 import cpw.mods.fml.common.ProgressManager.ProgressBar;
-import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
-import makamys.mclib.ext.assetdirector.AssetFetcher.VersionIndex;
 import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 
 public class AssetDirector {
@@ -42,20 +39,25 @@ public class AssetDirector {
     private AssetFetcher fetcher = new AssetFetcher(PATH);
     private Map<String, JsonObject> soundJsons = new HashMap<>();
     
-    ProgressBar downloadBar;
-    
     static {
         instance = new AssetDirector();
     }
     
+    @SuppressWarnings("deprecation")
     private void parseJsonStream(InputStream jsonStream, String modid) throws IOException {
         JsonObject json = new Gson().fromJson(new InputStreamReader(jsonStream), JsonObject.class);
         JsonObject assets = json.get("assets").getAsJsonObject();
-        Map<String, List<String>> downloadMap = new HashMap();
-        List<String> jarVers = new ArrayList();
-        int downloadCount = 0;
+        
+        Map<String, List<String>> objectFetchQueue = new HashMap<>();
+        List<String> jarLoadQueue = new ArrayList<>();
+        List<String> jarFetchQueue;
+        
+        ProgressBar downloadBar = null;
+        
         for(Entry<String, JsonElement> entry : assets.entrySet()) {
             String version = entry.getKey();
+            fetcher.loadVersionDeps(version);
+            
             VersionEntryJSON entryObj = new Gson().fromJson(entry.getValue(), VersionEntryJSON.class);
             List<String> objects = entryObj.objects != null ? entryObj.objects : new ArrayList<>();
             
@@ -65,39 +67,40 @@ public class AssetDirector {
             }
             
             if(entryObj.jar) {
-            	jarVers.add(version);
-            	if(!new File(fetcher.rootDir, AssetFetcher.CLIENT_JAR_PATH.get(version)).exists()) {
-                	downloadCount++;
-            	}
+            	jarLoadQueue.add(version);
             }
             
-            for(String asset : objects) {
-                VersionIndex vi = fetcher.versionIndexes.get(version);
-                AssetIndex assetIndex = fetcher.assetIndexes.get(vi.assetsId);
-                String hash = assetIndex.nameToHash.get(asset);
-                if(hash != null && !fetcher.info.objectIndex.contains(hash)) {
-                	downloadCount++;
-                }
-            }
-            
-            downloadMap.put(version, objects);
+            objectFetchQueue.put(version, objects.stream().filter(o -> fetcher.needsFetchAsset(version, o, true)).collect(Collectors.toList()));
         }
         
+        jarFetchQueue = jarLoadQueue.stream().filter(v -> fetcher.needsFetchJar(v)).collect(Collectors.toList());
+        int downloadCount = jarFetchQueue.size() + objectFetchQueue.values().stream().mapToInt(q -> q.size()).sum();
         if(downloadCount > 0) {
         	downloadBar = ProgressManager.push("Downloading", downloadCount);
         }
         
-        for(String version : jarVers) {
+        for(String version : jarFetchQueue) {
+            if(downloadBar != null) {
+                downloadBar.step("minecraft.jar, version " + version);
+            }
+            fetcher.fetchJar(version);
+        }
+        
+        for(String version : jarLoadQueue) {
             fetcher.loadJar(version);
         }
     	
-        for(Entry<String, List<String>> versionAndAssets : downloadMap.entrySet()) {
-            fetcher.fetchResources(versionAndAssets.getKey(), versionAndAssets.getValue());
+        for(Entry<String, List<String>> versionAndAssets : objectFetchQueue.entrySet()) {
+            for(String asset : versionAndAssets.getValue()) {
+                String[] assetPathSplit = asset.split("/");
+                downloadBar.step(assetPathSplit[assetPathSplit.length - 1]);
+                
+                fetcher.fetchAsset(versionAndAssets.getKey(), asset);
+            }
         }
 
     	if(downloadBar != null) {
             ProgressManager.pop(downloadBar);
-            downloadBar = null;
     	}
     }
     
@@ -150,7 +153,7 @@ public class AssetDirector {
         String assetsId = fetcher.versionToAssetsId(version);
         JsonObject soundJson = soundJsons.get(assetsId);
         if(soundJson == null) {
-            fetcher.fetchResources(version, Arrays.asList("minecraft/sounds.json"));
+            fetcher.fetchAsset(version, "minecraft/sounds.json");
             soundJson = new Gson().fromJson(new InputStreamReader(fetcher.getAssetInputStream(version, "minecraft/sounds.json")), JsonObject.class);
             soundJsons.put(assetsId, soundJson);
         }
