@@ -12,7 +12,7 @@ import com.google.gson.JsonObject;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import makamys.mclib.core.MCLib;
-import makamys.mclib.ext.assetdirector.ADJsonHelper;
+import makamys.mclib.ext.assetdirector.ADConfig;
 import makamys.mclib.ext.assetdirector.AssetDirectorAPI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
@@ -28,13 +28,13 @@ public class ADTest {
     public void onConstruction(FMLConstructionEvent event) {
         MCLib.init();
         
-        // asset_director.json test
-        AssetDirectorAPI.register();
+        ADConfig config = new ADConfig();
+        config.addObject("1.17", "minecraft/lang/ms_my.json");
+        config.addSoundEvent("1.17", "music_disc.pigstep", "record");
+        config.addSoundEvent("1.17", "music_disc.pigstep", "music"); // Test of duplicate sound event
+        config.addJar("1.17");
         
-        // dynamic json test
-        JsonObject adJson = new JsonObject();
-        ADJsonHelper.addSoundEvent(adJson, "1.17", "entity.axolotl.attack", "neutral");
-        AssetDirectorAPI.register(adJson);
+        AssetDirectorAPI.register(config);
     }
     
     @EventHandler

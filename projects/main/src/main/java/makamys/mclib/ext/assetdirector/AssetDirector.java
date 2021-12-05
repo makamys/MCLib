@@ -24,6 +24,8 @@ import com.google.gson.JsonPrimitive;
 
 import cpw.mods.fml.common.ProgressManager;
 import cpw.mods.fml.common.ProgressManager.ProgressBar;
+import makamys.mclib.ext.assetdirector.ADConfig.VersionAssets;
+import makamys.mclib.ext.assetdirector.ADConfig.VersionAssets.SoundEvent;
 import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 
 public class AssetDirector {
@@ -46,9 +48,8 @@ public class AssetDirector {
     }
     
     @SuppressWarnings("deprecation")
-    private void parseJsonStream(InputStream jsonStream, String modid) throws IOException {
-        JsonObject json = new Gson().fromJson(new InputStreamReader(jsonStream), JsonObject.class);
-        JsonObject assets = json.get("assets").getAsJsonObject();
+    private void parseJson(String json, String modid) throws IOException {
+        ADConfig config = new Gson().fromJson(json, ADConfig.class);
         
         Map<String, List<String>> objectFetchQueue = new HashMap<>();
         List<String> jarLoadQueue = new ArrayList<>();
@@ -56,11 +57,11 @@ public class AssetDirector {
         
         ProgressBar downloadBar = null;
         
-        for(Entry<String, JsonElement> entry : assets.entrySet()) {
+        for(Entry<String, VersionAssets> entry : config.assets.entrySet()) {
             String version = entry.getKey();
             fetcher.loadVersionDeps(version);
             
-            VersionEntryJSON entryObj = new Gson().fromJson(entry.getValue(), VersionEntryJSON.class);
+            VersionAssets entryObj = entry.getValue();
             List<String> objects = entryObj.objects != null ? entryObj.objects : new ArrayList<>();
             
             if(entryObj.soundEvents != null) {
@@ -106,7 +107,7 @@ public class AssetDirector {
     	}
     }
     
-    private List<String> getObjectsAndSetCategories(List<JsonObject> soundEvents, JsonObject soundJson, String modid) {
+    private List<String> getObjectsAndSetCategories(List<SoundEvent> soundEvents, JsonObject soundJson, String modid) {
         List<String> objects = new ArrayList<>();
         JsonArray requested = null;
         if(!soundJson.has(SOUNDS_JSON_REQUESTED)) {
@@ -114,15 +115,9 @@ public class AssetDirector {
         }
         requested = soundJson.get(SOUNDS_JSON_REQUESTED).getAsJsonArray();
         
-        for(JsonObject eventObj : soundEvents) {
-            String name, category = null;
-            if(eventObj.isJsonPrimitive() && eventObj.getAsJsonPrimitive().isString()) {
-                name = eventObj.getAsJsonPrimitive().getAsString();
-            } else {
-                name = eventObj.get("name").getAsString();
-                category = eventObj.get("category").getAsString();
-            }
-            
+        for(SoundEvent eventObj : soundEvents) {
+            String name = eventObj.name;
+            String category = eventObj.category;
             JsonObject event = soundJson.getAsJsonObject(name);
             if(event == null) {
                 LOGGER.warn("Mod " + modid + " requested non-existent sound event " + name);
@@ -178,18 +173,18 @@ public class AssetDirector {
 
     @SuppressWarnings("deprecation")
     public void preInit() {
-        ProgressBar bar = ProgressManager.push("AssetDirector - Loading assets", AssetDirectorAPI.jsonStreams.size());
+        ProgressBar bar = ProgressManager.push("AssetDirector - Loading assets", AssetDirectorAPI.jsons.size());
         boolean connectionOK = true;
         
-        for(Entry<String, InputStream> entry : AssetDirectorAPI.jsonStreams.entrySet()) {
+        for(Entry<String, String> entry : AssetDirectorAPI.jsons.entrySet()) {
             String modid = entry.getKey();
-            InputStream jsonStream = entry.getValue();
+            String json = entry.getValue();
             
             bar.step(modid);
             if(connectionOK) {
                 try {
                     LOGGER.trace("Fetching assets of " + modid);
-                    parseJsonStream(jsonStream, modid);
+                    parseJson(json, modid);
                 } catch(Exception e) {
                     LOGGER.error("Failed to fetch assets of " + modid);
                     if(e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
