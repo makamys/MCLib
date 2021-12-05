@@ -26,6 +26,7 @@ import cpw.mods.fml.common.versioning.ComparableVersion;
 
 import static makamys.mclib.ext.assetdirector.AssetDirector.LOGGER;
 
+/** Responsible for the implementation details of fetching assets, most notably interfacing with Mojang's API. */
 public class AssetFetcher {
     
     final static String MANIFEST_ENDPOINT = "https://launchermeta.mojang.com/mc/game/version_manifest.json";

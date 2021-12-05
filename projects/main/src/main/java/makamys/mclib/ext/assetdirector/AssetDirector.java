@@ -28,6 +28,7 @@ import makamys.mclib.ext.assetdirector.ADConfig.VersionAssets;
 import makamys.mclib.ext.assetdirector.ADConfig.VersionAssets.SoundEvent;
 import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 
+/** Responsible for the high level logic of fetching assets. */
 public class AssetDirector {
     
     static final String NS = "AssetDirector";
