@@ -22,25 +22,26 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import cpw.mods.fml.common.ProgressManager.ProgressBar;
 import cpw.mods.fml.common.versioning.ComparableVersion;
 
 import static makamys.mclib.ext.assetdirector.AssetDirector.LOGGER;
 
 public class AssetFetcher {
     
-    private final static String MANIFEST_ENDPOINT = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    private final static String RESOURCES_ENDPOINT = "http://resources.download.minecraft.net";
+    final static String MANIFEST_ENDPOINT = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+    final static String RESOURCES_ENDPOINT = "http://resources.download.minecraft.net";
     
-    private final static StringTemplate ASSET_INDEX_PATH = new StringTemplate("assets/indexes/{}.json");
-    private final static StringTemplate CLIENT_JAR_PATH = new StringTemplate("versions/{}/{}.jar");
-    private final static StringTemplate VERSION_INDEX_PATH = new StringTemplate("versions/{}/{}.json");
+    final static StringTemplate ASSET_INDEX_PATH = new StringTemplate("assets/indexes/{}.json");
+    final static StringTemplate CLIENT_JAR_PATH = new StringTemplate("versions/{}/{}.jar");
+    final static StringTemplate VERSION_INDEX_PATH = new StringTemplate("versions/{}/{}.json");
     
     private static final int DOWNLOAD_TIMEOUT = 10_000; // ms
     
     private final File INFO_JSON;
     
     private static JsonObject manifest;
-    private InfoJSON info;
+    InfoJSON info;
     public Map<String, VersionIndex> versionIndexes = new HashMap<>();
     public Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
@@ -71,6 +72,10 @@ public class AssetFetcher {
             String hash = assetIndex.nameToHash.get(asset);
             if(hash != null) {
                 if(!info.objectIndex.contains(hash)) {
+                	if(AssetDirector.instance.downloadBar != null) {
+                		String[] assetPathSplit = asset.split("/");
+                		AssetDirector.instance.downloadBar.step(assetPathSplit[assetPathSplit.length - 1]);
+                	}
                     downloadAsset(hash);
                 }
             } else {
@@ -180,7 +185,7 @@ public class AssetFetcher {
         String url;
     }
     
-    private static class InfoJSON {
+    static class InfoJSON {
         Set<String> objectIndex = new HashSet<>();
     }
     
@@ -201,7 +206,7 @@ public class AssetFetcher {
     public class VersionIndex {
         public JsonObject json;
         public String assetsId;
-        private JarFile jar;
+        JarFile jar;
         public Set<String> jarContents;
         public ComparableVersion version;
         
@@ -216,6 +221,9 @@ public class AssetFetcher {
             
             File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
             if(!clientJar.exists()) {
+            	if(AssetDirector.instance.downloadBar != null) {
+            		AssetDirector.instance.downloadBar.step("minecraft.jar, version " + version);
+            	}
                 String url = json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
                 copyURLToFile(new URL(url), clientJar);   
             }
@@ -241,7 +249,7 @@ public class AssetFetcher {
         }
     }
     
-    private static final class StringTemplate {
+    static final class StringTemplate {
         private String template;
         
         public StringTemplate(String template){

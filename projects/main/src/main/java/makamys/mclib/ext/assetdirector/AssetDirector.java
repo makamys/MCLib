@@ -9,9 +9,11 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +25,8 @@ import com.google.gson.JsonPrimitive;
 
 import cpw.mods.fml.common.ProgressManager;
 import cpw.mods.fml.common.ProgressManager.ProgressBar;
+import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
+import makamys.mclib.ext.assetdirector.AssetFetcher.VersionIndex;
 import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 
 public class AssetDirector {
@@ -38,6 +42,8 @@ public class AssetDirector {
     private AssetFetcher fetcher = new AssetFetcher(PATH);
     private Map<String, JsonObject> soundJsons = new HashMap<>();
     
+    ProgressBar downloadBar;
+    
     static {
         instance = new AssetDirector();
     }
@@ -45,6 +51,9 @@ public class AssetDirector {
     private void parseJsonStream(InputStream jsonStream, String modid) throws IOException {
         JsonObject json = new Gson().fromJson(new InputStreamReader(jsonStream), JsonObject.class);
         JsonObject assets = json.get("assets").getAsJsonObject();
+        Map<String, List<String>> downloadMap = new HashMap();
+        List<String> jarVers = new ArrayList();
+        int downloadCount = 0;
         for(Entry<String, JsonElement> entry : assets.entrySet()) {
             String version = entry.getKey();
             VersionEntryJSON entryObj = new Gson().fromJson(entry.getValue(), VersionEntryJSON.class);
@@ -54,11 +63,43 @@ public class AssetDirector {
                 JsonObject soundJson = getOrFetchSoundJson(version);
                 objects.addAll(getObjectsAndSetCategories(entryObj.soundEvents, soundJson, modid));
             }
-            fetcher.fetchResources(version, objects);
+            
             if(entryObj.jar) {
-                fetcher.loadJar(version);
+            	jarVers.add(version);
+            	if(!new File(fetcher.rootDir, AssetFetcher.CLIENT_JAR_PATH.get(version)).exists()) {
+                	downloadCount++;
+            	}
             }
+            
+            for(String asset : objects) {
+                VersionIndex vi = fetcher.versionIndexes.get(version);
+                AssetIndex assetIndex = fetcher.assetIndexes.get(vi.assetsId);
+                String hash = assetIndex.nameToHash.get(asset);
+                if(hash == null || fetcher.info.objectIndex.contains(hash)) {
+                	downloadCount--;
+                }
+            }
+            
+            downloadMap.put(version, objects);
+            downloadCount += objects.size();
         }
+        
+        if(downloadCount > 0) {
+        	downloadBar = ProgressManager.push("Downloading", downloadCount);
+        }
+        
+        for(String version : jarVers) {
+            fetcher.loadJar(version);
+        }
+    	
+        for(Entry<String, List<String>> versionAndAssets : downloadMap.entrySet()) {
+            fetcher.fetchResources(versionAndAssets.getKey(), versionAndAssets.getValue());
+        }
+
+    	if(downloadBar != null) {
+            ProgressManager.pop(downloadBar);
+            downloadBar = null;
+    	}
     }
     
     private List<String> getObjectsAndSetCategories(List<JsonObject> soundEvents, JsonObject soundJson, String modid) {
