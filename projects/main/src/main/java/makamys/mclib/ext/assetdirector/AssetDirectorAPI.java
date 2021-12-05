@@ -21,9 +21,13 @@ public class AssetDirectorAPI {
     
     static Map<String, InputStream> jsonStreams = SharedReference.get(NS, "jsonStreams", HashMap.class);
     
+    private static boolean active = isClient();
+    
     /** Enqueues asset downloading for a mod, using <code>asset_director.json</code> inside the mod jar for configuration. Can be called anytime before pre-init.
      */
     public static void register() {
+        if(!active) return;
+        
         InputStream jsonStream = AssetDirectorAPI.class.getClassLoader().getResourceAsStream("asset_director.json");
         if(jsonStream == null) {
             MCLib.LOGGER.error("Missing asset_director.json");
@@ -37,13 +41,21 @@ public class AssetDirectorAPI {
      * @param assetDirectorJSON
      */
     public static void register(JsonObject assetDirectorJSON) {
+        if(!active) return;
+        
         jsonStreams.put(Loader.instance().activeModContainer().getModId(), IOUtils.toInputStream(new Gson().toJson(assetDirectorJSON)));
     }
     
+    private static boolean isClient() {
+        return(AssetDirectorAPI.class.getResource("/net/minecraft/client/Minecraft.class") != null);
+    }
+    
     static {
-        TaskQueue.enqueueTask(LoaderState.PREINITIALIZATION, "AssetDirectorPreinit", () -> {
-            AssetDirector.instance.preInit();
-        });
+        if(active) {
+            TaskQueue.enqueueTask(LoaderState.PREINITIALIZATION, "AssetDirectorPreinit", () -> {
+                AssetDirector.instance.preInit();
+            });
+        }
     }
     
 }
