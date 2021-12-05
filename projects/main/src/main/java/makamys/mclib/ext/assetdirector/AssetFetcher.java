@@ -223,7 +223,7 @@ public class AssetFetcher {
     static class InfoJSON {
         Set<String> objectIndex = new HashSet<>();
         
-        private volatile boolean dirty;
+        private transient boolean dirty;
     }
     
     public static class AssetIndex {
