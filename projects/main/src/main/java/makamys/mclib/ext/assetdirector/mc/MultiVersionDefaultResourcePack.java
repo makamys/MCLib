@@ -72,7 +72,7 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
 
     public boolean resourceExists(ResourceLocation resLoc) {
         parseName(resLoc);
-        return scratch.isInJar ? true : fetcher.getObjectIndex().contains(scratch.hash);
+        return scratch.isInJar ? true : fetcher.hashExists(scratch.hash);
     }
     
     private void parseName(ResourceLocation resLoc){

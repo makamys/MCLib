@@ -203,6 +203,12 @@ public class AssetDirector {
         
         fetcher.finish();
         MultiVersionDefaultResourcePack.inject(this);
+        
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                fetcher.finish();
+            }}, "AssetDirector shutdown thread"));
     }
     
 }

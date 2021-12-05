@@ -100,6 +100,7 @@ public class AssetFetcher {
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
         copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), new File(rootDir, "assets/objects/" + relPath));
         info.objectIndex.add(hash);
+        info.dirty = true;
     }
     
     /** Loads manifest, version index, asset index and client jar for the given version as needed. */
@@ -176,12 +177,31 @@ public class AssetFetcher {
         return info.objectIndex;
     }
     
+    public File getAssetFile(String hash) {
+        return new File(rootDir, "assets/objects/" + hash.substring(0, 2) + "/" + hash);
+    }
+    
     public InputStream getAssetInputStream(String hash) throws IOException {
-        return new BufferedInputStream(new FileInputStream(new File(rootDir, "assets/objects/" + hash.substring(0, 2) + "/" + hash)));
+        return new BufferedInputStream(new FileInputStream(getAssetFile(hash)));
     }
     
     public InputStream getAssetInputStream(String version, String path) throws IOException {
         return getAssetInputStream(assetIndexes.get(versionToAssetsId(version)).nameToHash.get(path));
+    }
+    
+    public boolean hashExists(String hash) {
+        if(!getObjectIndex().contains(hash)) {
+            return false;
+        } else {
+            if(!getAssetFile(hash).exists()) {
+                // correct the index
+                getObjectIndex().remove(hash);
+                info.dirty = true;
+                return false;
+            } else {
+                return true;
+            }
+        }
     }
     
     public String versionToAssetsId(String version) {
@@ -201,6 +221,8 @@ public class AssetFetcher {
     
     static class InfoJSON {
         Set<String> objectIndex = new HashSet<>();
+        
+        private volatile boolean dirty;
     }
     
     public static class AssetIndex {
@@ -258,10 +280,13 @@ public class AssetFetcher {
     }
 
     public void finish() {
-        try(FileWriter writer = new FileWriter(INFO_JSON)){
-            new Gson().toJson(info, writer);
-        } catch(IOException e) {
-            e.printStackTrace();
+        if(info.dirty) {
+            try(FileWriter writer = new FileWriter(INFO_JSON)){
+                new Gson().toJson(info, writer);
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
+            info.dirty = false;
         }
     }
     
