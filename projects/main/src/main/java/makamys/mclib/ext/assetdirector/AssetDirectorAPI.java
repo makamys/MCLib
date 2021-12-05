@@ -13,6 +13,8 @@ import com.google.gson.JsonObject;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.LoaderState;
+import cpw.mods.fml.relauncher.FMLLaunchHandler;
+import cpw.mods.fml.relauncher.Side;
 import makamys.mclib.core.MCLib;
 import makamys.mclib.core.TaskQueue;
 import makamys.mclib.core.sharedstate.SharedReference;
@@ -21,7 +23,7 @@ public class AssetDirectorAPI {
     
     static Map<String, InputStream> jsonStreams = SharedReference.get(NS, "jsonStreams", HashMap.class);
     
-    private static boolean active = isClient();
+    private static boolean active = FMLLaunchHandler.side() == Side.CLIENT;
     
     /** Enqueues asset downloading for a mod, using <code>asset_director.json</code> inside the mod jar for configuration. Can be called anytime before pre-init.
      */
@@ -44,10 +46,6 @@ public class AssetDirectorAPI {
         if(!active) return;
         
         jsonStreams.put(Loader.instance().activeModContainer().getModId(), IOUtils.toInputStream(new Gson().toJson(assetDirectorJSON)));
-    }
-    
-    private static boolean isClient() {
-        return(AssetDirectorAPI.class.getResource("/net/minecraft/client/Minecraft.class") != null);
     }
     
     static {
