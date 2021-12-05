@@ -44,13 +44,14 @@ public class AssetFetcher {
     public Map<String, VersionIndex> versionIndexes = new HashMap<>();
     public Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
-    public File rootDir;
+    public File rootDir, adDir;
     
     private boolean printedDownloading;
     
-    public AssetFetcher(File rootDir) {
+    public AssetFetcher(File rootDir, File adDir) {
         this.rootDir = rootDir;
-        INFO_JSON = new File(rootDir, "info.json");
+        this.adDir = adDir;
+        INFO_JSON = new File(adDir, "info.json");
         if(INFO_JSON.exists()) {
             try {
                 info = loadJson(INFO_JSON, InfoJSON.class);

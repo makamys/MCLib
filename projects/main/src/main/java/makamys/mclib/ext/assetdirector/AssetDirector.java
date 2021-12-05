@@ -29,14 +29,15 @@ import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 public class AssetDirector {
     
     static final String NS = "AssetDirector";
-    static final File PATH = new File(OsPaths.getDefaultInstallationDir().toFile(), "asset_director");
+    static final File ROOT_DIR = OsPaths.getDefaultInstallationDir().toFile();
+    static final File AD_DIR = new File(ROOT_DIR, "asset_director");
     static final Logger LOGGER = LogManager.getLogger("AssetDirector");
     
     public static final String SOUNDS_JSON_REQUESTED = ":tmp:requested";
     
     static AssetDirector instance;
     
-    private AssetFetcher fetcher = new AssetFetcher(PATH);
+    private AssetFetcher fetcher = new AssetFetcher(ROOT_DIR, AD_DIR);
     private Map<String, JsonObject> soundJsons = new HashMap<>();
     
     static {
