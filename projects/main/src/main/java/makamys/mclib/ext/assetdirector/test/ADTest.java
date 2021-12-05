@@ -19,6 +19,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
 import cpw.mods.fml.common.event.FMLConstructionEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.relauncher.Side;
 
 @Mod(modid = "ADTest", version = "0.0")
 public class ADTest {
@@ -38,13 +39,15 @@ public class ADTest {
     
     @EventHandler
     public void onPreInit(FMLPreInitializationEvent event) {
-        Blocks.gold_block.setBlockTextureName("minecraft_1.17:gold_block");
-        
-        try {
-            JsonObject lang = new Gson().fromJson(new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation("minecraft_1.17:lang/ms_my.json")).getInputStream(), Charsets.UTF_8)), JsonObject.class);
-            System.out.println("Trident in Malay is " + lang.get("item.minecraft.trident"));
-        } catch(IOException e) {
-            e.printStackTrace();
+        if(event.getSide() == Side.CLIENT) {
+            Blocks.gold_block.setBlockTextureName("minecraft_1.17:gold_block");
+            
+            try {
+                JsonObject lang = new Gson().fromJson(new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation("minecraft_1.17:lang/ms_my.json")).getInputStream(), Charsets.UTF_8)), JsonObject.class);
+                System.out.println("Trident in Malay is " + lang.get("item.minecraft.trident"));
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
         }
     }
     
