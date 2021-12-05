@@ -29,8 +29,9 @@ import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 public class AssetDirector {
     
     static final String NS = "AssetDirector";
-    static final File ROOT_DIR = OsPaths.getDefaultInstallationDir().toFile();
-    static final File AD_DIR = new File(ROOT_DIR, "asset_director");
+    static final boolean separateDir = Boolean.parseBoolean(System.getProperty("assetDirector.separateDir", "false"));
+    static final File ROOT_DIR = !separateDir ? OsPaths.getDefaultInstallationDir().toFile() : new File(OsPaths.getDefaultInstallationDir().toFile(), "asset_director");
+    static final File AD_DIR = !separateDir ? new File(ROOT_DIR, "asset_director") : ROOT_DIR;
     static final Logger LOGGER = LogManager.getLogger("AssetDirector");
     
     public static final String SOUNDS_JSON_REQUESTED = ":tmp:requested";
