@@ -165,12 +165,6 @@ public class AssetDirector {
     public AssetFetcher getFetcher() {
         return fetcher;
     }
-    
-    private static class VersionEntryJSON {
-        List<String> objects;
-        List<JsonObject> soundEvents;
-        boolean jar;
-    }
 
     @SuppressWarnings("deprecation")
     public void preInit() {
