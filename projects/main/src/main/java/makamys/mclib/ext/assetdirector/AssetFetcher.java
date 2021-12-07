@@ -52,6 +52,9 @@ public class AssetFetcher {
     public AssetFetcher(File rootDir, File adDir) {
         this.rootDir = rootDir;
         this.adDir = adDir;
+        if(!adDir.exists()) {
+        	adDir.mkdirs();
+        }
         INFO_JSON = new File(adDir, "info.json");
         if(INFO_JSON.exists()) {
             try {
@@ -70,7 +73,7 @@ public class AssetFetcher {
         VersionIndex vi = versionIndexes.get(version);
         AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
         String hash = assetIndex.nameToHash.get(asset);
-        if(hash != null) {
+        if(!info.objectIndex.contains(hash)) {
             downloadAsset(hash);
         }
     }

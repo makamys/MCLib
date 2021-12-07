@@ -56,8 +56,6 @@ public class AssetDirector {
         List<String> jarLoadQueue = new ArrayList<>();
         List<String> jarFetchQueue;
         
-        ProgressBar downloadBar = null;
-        
         for(Entry<String, VersionAssets> entry : config.assets.entrySet()) {
             String version = entry.getKey();
             fetcher.loadVersionDeps(version);
@@ -79,6 +77,8 @@ public class AssetDirector {
         
         jarFetchQueue = jarLoadQueue.stream().filter(v -> fetcher.needsFetchJar(v)).collect(Collectors.toList());
         int downloadCount = jarFetchQueue.size() + objectFetchQueue.values().stream().mapToInt(q -> q.size()).sum();
+        
+        ProgressBar downloadBar = null;
         if(downloadCount > 0) {
         	downloadBar = ProgressManager.push("Downloading", downloadCount);
         }
@@ -97,8 +97,11 @@ public class AssetDirector {
         for(Entry<String, List<String>> versionAndAssets : objectFetchQueue.entrySet()) {
             for(String asset : versionAndAssets.getValue()) {
                 String[] assetPathSplit = asset.split("/");
-                downloadBar.step(assetPathSplit[assetPathSplit.length - 1]);
+                if(downloadBar != null) {
+                    downloadBar.step(assetPathSplit[assetPathSplit.length - 1]);
+                }
                 
+                System.out.println(asset);
                 fetcher.fetchAsset(versionAndAssets.getKey(), asset);
             }
         }
