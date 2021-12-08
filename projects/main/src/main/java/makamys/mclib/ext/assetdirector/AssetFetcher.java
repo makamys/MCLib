@@ -38,7 +38,8 @@ public class AssetFetcher {
     final static StringTemplate CLIENT_JAR_PATH = new StringTemplate("versions/{}/{}.jar");
     final static StringTemplate VERSION_INDEX_PATH = new StringTemplate("versions/{}/{}.json");
     
-    private static final int DOWNLOAD_TIMEOUT = 10_000; // ms
+    private static final int    DOWNLOAD_TIMEOUT = 10_000, // ms
+                                DOWNLOAD_ATTEMPTS = 3;
     
     private final File INFO_JSON;
     
@@ -87,13 +88,7 @@ public class AssetFetcher {
         AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
         String hash = assetIndex.nameToHash.get(asset);
         if(hash != null) {
-            String relPath = "/" + hash.substring(0, 2) + "/" + hash;
-        	File assetFile = new File(rootDir, "assets/objects/" + relPath);
-            try {
-            	return !info.objectIndex.contains(hash) || !assetFile.exists();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+            return !info.fileIsPresent(hash);
         } else if(printErrors) {
             LOGGER.error("Couldn't find asset " + asset + " inside " + version + " asset index");
         }
@@ -108,8 +103,19 @@ public class AssetFetcher {
     
     private void downloadAsset(String hash) throws IOException {
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
-        copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), new File(rootDir, "assets/objects/" + relPath));
-        info.objectIndex.add(hash);
+        File outFile = new File(rootDir, "assets/objects/" + relPath);
+        
+        for(int i = 0; i < DOWNLOAD_ATTEMPTS; i++) {
+            copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), outFile);
+            if(hash.equals(getSha1(outFile))) {
+                // OK
+                info.objectIndex.add(hash);
+                break;
+            } else {
+                LOGGER.warn("Got invalid hash when downloading " + hash + ". Attempt " + (i + 1) + "/" + DOWNLOAD_ATTEMPTS);
+            }
+        }
+        
         info.dirty = true;
     }
     
@@ -210,6 +216,15 @@ public class AssetFetcher {
         }
     }
     
+    static String getSha1(File file) {
+        try {
+            return Files.hash(file, Hashing.sha1()).toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
     public String versionToAssetsId(String version) {
         try {
             loadVersionDeps(version);
@@ -225,10 +240,28 @@ public class AssetFetcher {
         String url;
     }
     
-    static class InfoJSON {
+    class InfoJSON {
+        // Objects known to have been present and valid at one point. They are assumed to still be, for performance.
+        // False positives are removed when attempted to be accessed.
         Set<String> objectIndex = new HashSet<>();
         
+        private transient Set<String> checkedObjects = new HashSet<>();
+        
         private transient boolean dirty;
+
+        public boolean fileIsPresent(String hash) {
+            if(!objectIndex.contains(hash) && !checkedObjects.contains(hash)) {
+                // verify missing entries the first time, so we don't accidentally redownload them
+                File assetFile = getAssetFile(hash);
+                if(assetFile.exists() && hash.equals(getSha1(assetFile))) {
+                    objectIndex.add(hash);
+                    dirty = true;
+                }
+                checkedObjects.add(hash);
+            }
+            
+            return objectIndex.contains(hash);
+        }
     }
     
     public static class AssetIndex {
