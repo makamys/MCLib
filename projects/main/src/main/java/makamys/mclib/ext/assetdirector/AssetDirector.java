@@ -162,6 +162,8 @@ public class AssetDirector {
 
     @SuppressWarnings("deprecation")
     public void preInit() {
+        long t0 = System.nanoTime();
+        
         ProgressBar bar = ProgressManager.push("AssetDirector - Loading assets", AssetDirectorAPI.jsons.size());
         boolean connectionOK = true;
         
@@ -194,6 +196,9 @@ public class AssetDirector {
             public void run() {
                 fetcher.finish();
             }}, "AssetDirector shutdown thread"));
+        
+        long t1 = System.nanoTime();
+        LOGGER.debug("AssetDirector pre-init took " + (t1 - t0) / 1_000_000_000.0 + "s.");
     }
     
 }
