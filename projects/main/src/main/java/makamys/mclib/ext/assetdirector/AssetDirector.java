@@ -72,7 +72,7 @@ public class AssetDirector {
             	jarLoadQueue.add(version);
             }
             
-            objectFetchQueue.put(version, objects.stream().filter(o -> fetcher.needsFetchAsset(version, o, true)).collect(Collectors.toList()));
+            objectFetchQueue.put(version, objects.stream().filter(o -> fetcher.needsFetchAsset(version, o, true)).distinct().collect(Collectors.toList()));
         }
         
         jarFetchQueue = jarLoadQueue.stream().filter(v -> fetcher.needsFetchJar(v)).collect(Collectors.toList());
