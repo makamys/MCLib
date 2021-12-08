@@ -122,10 +122,6 @@ public class AssetFetcher {
     public void loadVersionDeps(String version) throws IOException {
         if(versionIndexes.containsKey(version)) return;
         
-        if(manifest == null) {
-            manifest = downloadJson(MANIFEST_ENDPOINT, JsonObject.class);
-        }
-        
         // TODO redownload stuff if timestamp in manifest changes?
         File indexJson = new File(rootDir, VERSION_INDEX_PATH.get(version));
         if(!indexJson.exists()) {
@@ -157,6 +153,10 @@ public class AssetFetcher {
     }
     
     private void downloadVersionIndex(String version, File dest) throws IOException {
+        if(manifest == null) {
+            manifest = downloadJson(MANIFEST_ENDPOINT, JsonObject.class);
+        }
+        
         for(JsonElement verElem : manifest.get("versions").getAsJsonArray()) {
             ManifestVersionJSON ver = new Gson().fromJson(verElem, ManifestVersionJSON.class);
             if(ver.id.equals(version)) {

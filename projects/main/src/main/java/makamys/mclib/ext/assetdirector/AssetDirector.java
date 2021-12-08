@@ -145,7 +145,9 @@ public class AssetDirector {
         String assetsId = fetcher.versionToAssetsId(version);
         JsonObject soundJson = soundJsons.get(assetsId);
         if(soundJson == null) {
-            fetcher.fetchAsset(version, "minecraft/sounds.json");
+            if(fetcher.needsFetchAsset(version, "minecraft/sounds.json", true)) {
+                fetcher.fetchAsset(version, "minecraft/sounds.json");
+            }
             soundJson = new Gson().fromJson(new InputStreamReader(fetcher.getAssetInputStream(version, "minecraft/sounds.json")), JsonObject.class);
             soundJsons.put(assetsId, soundJson);
         }
