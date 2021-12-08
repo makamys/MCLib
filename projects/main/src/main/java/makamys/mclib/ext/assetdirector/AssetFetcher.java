@@ -239,7 +239,7 @@ public class AssetFetcher {
         String url;
     }
     
-    class InfoJSON {
+    static class InfoJSON {
         // Objects known to have been present and valid at one point. They are assumed to still be, for performance.
         // False positives are removed when attempted to be accessed.
         Map<String, JsonObject> objectIndex = new HashMap<>();
@@ -251,7 +251,7 @@ public class AssetFetcher {
         public boolean fileIsPresent(String hash) {
             if(!objectIndex.containsKey(hash) && !checkedObjects.contains(hash)) {
                 // verify missing entries the first time, so we don't accidentally redownload them
-                File assetFile = getAssetFile(hash);
+                File assetFile = AssetDirector.instance.getFetcher().getAssetFile(hash);
                 if(assetFile.exists() && hash.equals(getSha1(assetFile))) {
                     objectIndex.put(hash, new JsonObject());
                     dirty = true;
