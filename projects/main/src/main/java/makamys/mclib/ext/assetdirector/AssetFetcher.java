@@ -110,13 +110,12 @@ public class AssetFetcher {
             if(hash.equals(getSha1(outFile))) {
                 // OK
                 info.objectIndex.put(hash, new JsonObject());
+                info.dirty = true;
                 break;
             } else {
                 LOGGER.warn("Got invalid hash when downloading " + hash + ". Attempt " + (i + 1) + "/" + DOWNLOAD_ATTEMPTS);
             }
         }
-        
-        info.dirty = true;
     }
     
     /** Loads manifest, version index, asset index and client jar for the given version as needed. */
