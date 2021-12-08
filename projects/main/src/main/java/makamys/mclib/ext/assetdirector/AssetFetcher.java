@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 
+import com.google.common.hash.Hashing;
+import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -84,7 +86,15 @@ public class AssetFetcher {
         AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
         String hash = assetIndex.nameToHash.get(asset);
         if(hash != null) {
-            return !info.objectIndex.contains(hash);
+            String relPath = "/" + hash.substring(0, 2) + "/" + hash;
+        	File assetFile = new File(rootDir, "assets/objects/" + relPath);
+            try {
+				if(!info.objectIndex.contains(hash) && (!assetFile.exists() || !Files.hash(assetFile, Hashing.sha1()).toString().equals(hash))) {
+					return true;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
         } else if(printErrors) {
             LOGGER.error("Couldn't find asset " + asset + " inside " + version + " asset index");
         }
