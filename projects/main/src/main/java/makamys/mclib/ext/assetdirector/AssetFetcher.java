@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarFile;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
@@ -89,9 +90,7 @@ public class AssetFetcher {
             String relPath = "/" + hash.substring(0, 2) + "/" + hash;
         	File assetFile = new File(rootDir, "assets/objects/" + relPath);
             try {
-				if(!info.objectIndex.contains(hash) && (!assetFile.exists() || !Files.hash(assetFile, Hashing.sha1()).toString().equals(hash))) {
-					return true;
-				}
+            	return !info.objectIndex.contains(hash) || !assetFile.exists();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
