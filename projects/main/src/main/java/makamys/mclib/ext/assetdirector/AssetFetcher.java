@@ -109,7 +109,7 @@ public class AssetFetcher {
             copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), outFile);
             if(hash.equals(getSha1(outFile))) {
                 // OK
-                info.objectIndex.add(hash);
+                info.objectIndex.put(hash, new JsonObject());
                 break;
             } else {
                 LOGGER.warn("Got invalid hash when downloading " + hash + ". Attempt " + (i + 1) + "/" + DOWNLOAD_ATTEMPTS);
@@ -186,7 +186,7 @@ public class AssetFetcher {
     }
     
     public Set<String> getObjectIndex(){
-        return info.objectIndex;
+        return info.objectIndex.keySet();
     }
     
     public File getAssetFile(String hash) {
@@ -243,24 +243,24 @@ public class AssetFetcher {
     class InfoJSON {
         // Objects known to have been present and valid at one point. They are assumed to still be, for performance.
         // False positives are removed when attempted to be accessed.
-        Set<String> objectIndex = new HashSet<>();
+        Map<String, JsonObject> objectIndex = new HashMap<>();
         
         private transient Set<String> checkedObjects = new HashSet<>();
         
         private transient boolean dirty;
 
         public boolean fileIsPresent(String hash) {
-            if(!objectIndex.contains(hash) && !checkedObjects.contains(hash)) {
+            if(!objectIndex.containsKey(hash) && !checkedObjects.contains(hash)) {
                 // verify missing entries the first time, so we don't accidentally redownload them
                 File assetFile = getAssetFile(hash);
                 if(assetFile.exists() && hash.equals(getSha1(assetFile))) {
-                    objectIndex.add(hash);
+                    objectIndex.put(hash, new JsonObject());
                     dirty = true;
                 }
                 checkedObjects.add(hash);
             }
             
-            return objectIndex.contains(hash);
+            return objectIndex.containsKey(hash);
         }
     }
     
