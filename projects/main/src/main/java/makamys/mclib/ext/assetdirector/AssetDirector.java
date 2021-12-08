@@ -78,37 +78,28 @@ public class AssetDirector {
         jarFetchQueue = jarLoadQueue.stream().filter(v -> fetcher.needsFetchJar(v)).collect(Collectors.toList());
         int downloadCount = jarFetchQueue.size() + objectFetchQueue.values().stream().mapToInt(q -> q.size()).sum();
         
-        ProgressBar downloadBar = null;
         if(downloadCount > 0) {
-        	downloadBar = ProgressManager.push("Downloading", downloadCount);
-        }
-        
-        for(String version : jarFetchQueue) {
-            if(downloadBar != null) {
+            LOGGER.info("Downloading resources, this may take a while...");
+            ProgressBar downloadBar = ProgressManager.push("Downloading", downloadCount);
+            
+            for(String version : jarFetchQueue) {
                 downloadBar.step("minecraft.jar, version " + version);
+                fetcher.fetchJar(version);
             }
-            fetcher.fetchJar(version);
+        	
+            for(Entry<String, List<String>> versionAndAssets : objectFetchQueue.entrySet()) {
+                for(String asset : versionAndAssets.getValue()) {
+                    downloadBar.step(asset.replaceFirst("minecraft/", "").replaceFirst("sounds/", ""));
+                    fetcher.fetchAsset(versionAndAssets.getKey(), asset);
+                }
+            }
+
+            ProgressManager.pop(downloadBar);
         }
         
         for(String version : jarLoadQueue) {
             fetcher.loadJar(version);
         }
-    	
-        for(Entry<String, List<String>> versionAndAssets : objectFetchQueue.entrySet()) {
-            for(String asset : versionAndAssets.getValue()) {
-                String[] assetPathSplit = asset.split("/");
-                if(downloadBar != null) {
-                    downloadBar.step(assetPathSplit[assetPathSplit.length - 1]);
-                }
-                
-                System.out.println(asset);
-                fetcher.fetchAsset(versionAndAssets.getKey(), asset);
-            }
-        }
-
-    	if(downloadBar != null) {
-            ProgressManager.pop(downloadBar);
-    	}
     }
     
     private List<String> getObjectsAndSetCategories(List<SoundEvent> soundEvents, JsonObject soundJson, String modid) {

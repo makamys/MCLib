@@ -32,6 +32,7 @@ public class ADTest {
         config.addObject("1.17", "minecraft/lang/ms_my.json");
         config.addSoundEvent("1.17", "music_disc.pigstep", "record");
         config.addSoundEvent("1.17", "music_disc.pigstep", "music"); // Test of duplicate sound event
+        config.addObject("1.17", "minecraft/sounds/item/bucket/fill_axolotl1.ogg"); // Test downloading single sound file (check the example sounds.json for how to use)
         config.addJar("1.17");
         
         AssetDirectorAPI.register(config);

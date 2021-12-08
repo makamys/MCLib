@@ -1,0 +1,8 @@
+{
+  "item.bucket.fill_axolotl": {
+    "sounds": [
+      "minecraft_1.17:item/bucket/fill_axolotl1"
+    ],
+  "//": "Example of how to play downloaded sounds using a custom sound event. Don't forget to add 'yourassetfoldername:' to the beginning of it when referencing these events!"
+  }
+}

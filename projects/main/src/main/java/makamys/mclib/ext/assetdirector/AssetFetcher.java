@@ -1,5 +1,7 @@
 package makamys.mclib.ext.assetdirector;
 
+import static makamys.mclib.ext.assetdirector.AssetDirector.LOGGER;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,7 +12,6 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarFile;
@@ -23,8 +24,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import cpw.mods.fml.common.versioning.ComparableVersion;
-
-import static makamys.mclib.ext.assetdirector.AssetDirector.LOGGER;
 
 /** Responsible for the implementation details of fetching assets, most notably interfacing with Mojang's API. */
 public class AssetFetcher {
@@ -46,8 +45,6 @@ public class AssetFetcher {
     public Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
     public File rootDir, adDir;
-    
-    private boolean printedDownloading;
     
     public AssetFetcher(File rootDir, File adDir) {
         this.rootDir = rootDir;
@@ -73,7 +70,7 @@ public class AssetFetcher {
         VersionIndex vi = versionIndexes.get(version);
         AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
         String hash = assetIndex.nameToHash.get(asset);
-        if(!info.objectIndex.contains(hash)) {
+        if(hash != null) {
             downloadAsset(hash);
         }
     }
@@ -157,10 +154,6 @@ public class AssetFetcher {
     }
     
     private void copyURLToFile(URL source, File destination) throws IOException {
-        if(!printedDownloading) {
-            LOGGER.info("Downloading resources, this may take a while...");
-            printedDownloading = true;
-        }
         LOGGER.trace("Downloading " + source + " to " + destination);
         FileUtils.copyURLToFile(source, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
     }
