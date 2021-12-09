@@ -103,7 +103,7 @@ public class AssetFetcher {
     
     private void downloadAsset(String hash) throws IOException {
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
-        File outFile = new File(rootDir, "assets/objects/" + relPath);
+        File outFile = getAssetFile(hash);
         
         for(int i = 0; i < DOWNLOAD_ATTEMPTS; i++) {
             copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), outFile);
