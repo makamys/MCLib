@@ -121,7 +121,7 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     
     public static void inject(AssetDirector assetDirector) {
         IResourcePack multiDefaultPack = new MultiVersionDefaultResourcePack(assetDirector);
-        List defaultResourcePacks = ReflectionHelper.getPrivateValue(Minecraft.class, Minecraft.getMinecraft(), "defaultResourcePacks");
+        List defaultResourcePacks = ReflectionHelper.getPrivateValue(Minecraft.class, Minecraft.getMinecraft(), "defaultResourcePacks", "field_110449_ao");
         defaultResourcePacks.add(multiDefaultPack);
         IResourceManager resMan = Minecraft.getMinecraft().getResourceManager();
         if(resMan instanceof SimpleReloadableResourceManager) {
