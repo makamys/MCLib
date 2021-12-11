@@ -52,7 +52,7 @@ Static helper classes like `SloppyDepLoader` can be used by simply calling their
 
 Shared modules like `UpdateCheck` are exposed through the static fields of the `MCLibModules` class. These can be used starting from the pre-init phase, *but no earlier*. When multiple mods with MCLib embedded are present, calls to shared modules from all mods are redirected to a single mod which has the newest version of the library.
 
-Asset downloading commands from `AssetDirector` are exposed through ADConfig. Create a new ADConfig instance in your mod's FMLConstructionEvent, and add use `addObject`, `addSoundEvent` etc to request the assets you require. This ADConfig is initialized through the use of `AssetDirectorAPI.register(configVar)`. For examples, check out [this page](https://github.com/makamys/MCLib/blob/master/projects/main/src/main/java/makamys/mclib/ext/assetdirector/test/ADTest.java).
+Asset downloading commands from `AssetDirector` are exposed through `AssetDirectorAPI`. Create a new ADConfig instance in your mod's FMLConstructionEvent, and add use `addObject`, `addSoundEvent` etc to request the assets you require. This ADConfig is initialized through the use of `AssetDirectorAPI.register(configVar)`. For examples, check out [this page](https://github.com/makamys/MCLib/blob/master/projects/main/src/main/java/makamys/mclib/ext/assetdirector/test/ADTest.java).
 
 Check the [wiki](https://github.com/makamys/MCLib/wiki) for more documentation.
 
