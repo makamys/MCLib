@@ -56,7 +56,7 @@ Asset downloading commands from `AssetDirector` are exposed through ADConfig. Cr
 
 Check the [wiki](https://github.com/makamys/MCLib/wiki) for more documentation.
 
-Refer to my mod [Satchels](https://github.com/makamys/Satchels) for an example of a mod using this library.
+Refer to [Satchels](https://github.com/makamys/Satchels) for an example of a mod using this library.
 
 # Contributing
 
