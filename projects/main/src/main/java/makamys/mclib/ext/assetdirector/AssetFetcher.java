@@ -48,6 +48,8 @@ public class AssetFetcher {
     public Map<String, VersionIndex> versionIndexes = new HashMap<>();
     public Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
+    private Set<String> checkedObjects = new HashSet<>();
+    
     public File rootDir, adDir;
     
     public AssetFetcher(File rootDir, File adDir) {
@@ -88,11 +90,20 @@ public class AssetFetcher {
         AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
         String hash = assetIndex.nameToHash.get(asset);
         if(hash != null) {
-            return !info.fileIsPresent(hash);
+            return !fileIsPresent(hash);
         } else if(printErrors) {
             LOGGER.error("Couldn't find asset " + asset + " inside " + version + " asset index");
         }
         return false;
+    }
+    
+    public boolean fileIsPresent(String hash) {
+        if(!checkedObjects.contains(hash)) {
+            info.updateFileInfo(AssetDirector.instance.getFetcher().getAssetFile(hash));
+            checkedObjects.add(hash);
+        }
+        
+        return info.objectIndex.containsKey(hash);
     }
     
     public void fetchForAllVersions(String asset) throws IOException {
@@ -102,6 +113,8 @@ public class AssetFetcher {
     }
     
     private void downloadAsset(String hash) throws IOException {
+        flushInfoJSON(); // If we crashed in the middle of downloading an object pending for removal, it would stay in the objectIndex, and the corrupted download would never get validated. We flush here to avoid this.
+        
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
         File outFile = getAssetFile(hash);
         
@@ -201,18 +214,7 @@ public class AssetFetcher {
     }
     
     public boolean hashExists(String hash) {
-        if(!getObjectIndex().contains(hash)) {
-            return false;
-        } else {
-            if(!getAssetFile(hash).exists()) {
-                // correct the index
-                getObjectIndex().remove(hash);
-                info.dirty = true;
-                return false;
-            } else {
-                return true;
-            }
-        }
+        return getObjectIndex().contains(hash);
     }
     
     static String getSha1(File file) {
@@ -240,26 +242,24 @@ public class AssetFetcher {
     }
     
     static class InfoJSON {
-        // Objects known to have been present and valid at one point. They are assumed to still be, for performance.
-        // False positives are removed when attempted to be accessed.
+        // Objects known to have been present and valid at one point.
         Map<String, JsonObject> objectIndex = new HashMap<>();
-        
-        private transient Set<String> checkedObjects = new HashSet<>();
         
         private transient boolean dirty;
 
-        public boolean fileIsPresent(String hash) {
-            if(!objectIndex.containsKey(hash) && !checkedObjects.contains(hash)) {
-                // verify missing entries the first time, so we don't accidentally redownload them
-                File assetFile = AssetDirector.instance.getFetcher().getAssetFile(hash);
-                if(assetFile.exists() && hash.equals(getSha1(assetFile))) {
+        public void updateFileInfo(File assetFile) {
+            String hash = assetFile.getName();
+            if(assetFile.exists() && (objectIndex.containsKey(hash) || hash.equals(getSha1(assetFile)))) {
+                if(!objectIndex.containsKey(hash)) {
                     objectIndex.put(hash, new JsonObject());
                     dirty = true;
                 }
-                checkedObjects.add(hash);
+            } else {
+                if(objectIndex.containsKey(hash)) {
+                    objectIndex.remove(hash);
+                    dirty = true;
+                }
             }
-            
-            return objectIndex.containsKey(hash);
         }
     }
     
