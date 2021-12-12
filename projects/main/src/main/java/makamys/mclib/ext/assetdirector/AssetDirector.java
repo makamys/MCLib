@@ -190,13 +190,13 @@ public class AssetDirector {
         }
         ProgressManager.pop(bar);
         
-        fetcher.finish();
+        fetcher.flushInfoJSON();
         MultiVersionDefaultResourcePack.inject(this);
         
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
-                fetcher.finish();
+                fetcher.flushInfoJSON();
             }}, "AssetDirector shutdown thread"));
         
         long t1 = System.nanoTime();

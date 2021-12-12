@@ -317,7 +317,7 @@ public class AssetFetcher {
         }
     }
 
-    public void finish() {
+    public void flushInfoJSON() {
         if(info.dirty) {
             try(FileWriter writer = new FileWriter(INFO_JSON)){
                 new Gson().toJson(info, writer);
