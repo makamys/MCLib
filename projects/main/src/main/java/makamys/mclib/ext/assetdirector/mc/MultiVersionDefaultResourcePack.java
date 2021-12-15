@@ -71,6 +71,8 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     }
 
     public boolean resourceExists(ResourceLocation resLoc) {
+        if(!resLoc.getResourceDomain().startsWith("minecraft_")) return false;
+        
         parseName(resLoc);
         return scratch.isInJar ? true : fetcher.hashExists(scratch.hash);
     }
