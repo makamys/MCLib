@@ -26,16 +26,18 @@ repositories {
 }
 
 minecraft {
-	srgExtra "PK: makamys/mclib YOUR/MOD/PACKAGE/repackage/makamys/mclib"
+	srgExtra "PK: makamys/mclib <YOUR/MOD/PACKAGE>/repackage/makamys/mclib"
 }
 
 dependencies {
-	shade('com.github.makamys:MCLib:d78ddd3'){
+	shade('com.github.makamys:MCLib:<VERSION>'){
 		exclude group: "codechicken"
 	}
 }
 ```
-(This requires a `shade` configuration to work, see [the above link](http://web.archive.org/web/20150403035341/http://forgegradle.readthedocs.org/en/FG_1.2/user-guide/shading/).)
+Notes:
+* This snippet requires a `shade` configuration to work, see [the above link](http://web.archive.org/web/20150403035341/http://forgegradle.readthedocs.org/en/FG_1.2/user-guide/shading/).
+* In place of `<VERSION>`, use a release number (e.g. `0.3.1`) or a commit hash (e.g. `22cd459`).
 
 ## Using the library
 
