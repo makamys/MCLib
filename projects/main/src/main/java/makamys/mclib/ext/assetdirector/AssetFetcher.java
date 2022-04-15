@@ -62,7 +62,8 @@ public class AssetFetcher {
         if(INFO_JSON.exists()) {
             try {
                 info = loadJson(INFO_JSON, InfoJSON.class);
-            } catch(IOException e) {
+            } catch(Exception e) {
+                LOGGER.warn("Failed to load info.json, discarding contents.");
                 e.printStackTrace();
             }
         }
@@ -71,7 +72,7 @@ public class AssetFetcher {
         }
     }
 
-    public void fetchAsset(String version, String asset) throws IOException {
+    public void fetchAsset(String version, String asset) throws Exception {
         loadVersionDeps(version);
         VersionIndex vi = versionIndexes.get(version);
         AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
@@ -106,7 +107,7 @@ public class AssetFetcher {
         return info.objectIndex.containsKey(hash);
     }
     
-    public void fetchForAllVersions(String asset) throws IOException {
+    public void fetchForAllVersions(String asset) throws Exception {
         for(String v : assetIndexes.keySet()) {
             fetchAsset(v, asset);
         }
@@ -132,7 +133,7 @@ public class AssetFetcher {
     }
     
     /** Loads manifest, version index, asset index and client jar for the given version as needed. */
-    public void loadVersionDeps(String version) throws IOException {
+    public void loadVersionDeps(String version) throws Exception {
         if(versionIndexes.containsKey(version)) return;
         
         // TODO redownload stuff if timestamp in manifest changes?
@@ -165,7 +166,7 @@ public class AssetFetcher {
         return !new File(rootDir, AssetFetcher.CLIENT_JAR_PATH.get(version)).exists();
     }
     
-    private void downloadVersionIndex(String version, File dest) throws IOException {
+    private void downloadVersionIndex(String version, File dest) throws Exception {
         if(manifest == null) {
             manifest = downloadJson(MANIFEST_ENDPOINT, JsonObject.class);
         }
@@ -185,15 +186,15 @@ public class AssetFetcher {
         FileUtils.copyURLToFile(source, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
     }
     
-    private <T> T downloadJson(String url, Class<T> classOfT) throws IOException {
+    private <T> T downloadJson(String url, Class<T> classOfT) throws Exception {
         return loadJson(new URL(url).openStream(), classOfT);
     }
     
-    private <T> T loadJson(File file, Class<T> classOfT) throws IOException {
+    private <T> T loadJson(File file, Class<T> classOfT) throws Exception {
         return loadJson(new FileInputStream(file), classOfT);
     }
     
-    private <T> T loadJson(InputStream stream, Class<T> classOfT) throws IOException {
+    private <T> T loadJson(InputStream stream, Class<T> classOfT) throws Exception {
         return new Gson().fromJson(new InputStreamReader(new BufferedInputStream(stream)), classOfT);
     }
     
@@ -229,7 +230,7 @@ public class AssetFetcher {
     public String versionToAssetsId(String version) {
         try {
             loadVersionDeps(version);
-        } catch(IOException e) {
+        } catch(Exception e) {
             e.printStackTrace();
         }
         

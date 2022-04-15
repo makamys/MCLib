@@ -49,7 +49,7 @@ public class AssetDirector {
     }
     
     @SuppressWarnings("deprecation")
-    private void parseJson(String json, String modid) throws IOException {
+    private void parseJson(String json, String modid) throws Exception {
         ADConfig config = new Gson().fromJson(json, ADConfig.class);
         
         Map<String, List<String>> objectFetchQueue = new HashMap<>();
@@ -141,7 +141,7 @@ public class AssetDirector {
         return objects;
     }
     
-    private JsonObject getOrFetchSoundJson(String version) throws IOException {
+    private JsonObject getOrFetchSoundJson(String version) throws Exception {
         String assetsId = fetcher.versionToAssetsId(version);
         JsonObject soundJson = soundJsons.get(assetsId);
         if(soundJson == null) {
