@@ -198,6 +198,14 @@ public class AssetDirector {
     }
     
     private static File getAssetDirectorDir() {
+        String sharedDataDir = System.getProperty("minecraft.sharedDataDir");
+        if(sharedDataDir == null) {
+            sharedDataDir = System.getenv("MINECRAFT_SHARED_DATA_DIR");
+        }
+        if(sharedDataDir != null) {
+            return new File(sharedDataDir, "asset_director");
+        }
+        
         File assetsDir = MCUtil.getMCAssetsDir();
         // The old launcher deletes extra files from the assets directory, so we can't live there. Use `<launcher work dir>/asset_director` instead. 
         return !isOldLauncher(assetsDir) ? new File(assetsDir, "asset_director") : new File(assetsDir, "../asset_director");
