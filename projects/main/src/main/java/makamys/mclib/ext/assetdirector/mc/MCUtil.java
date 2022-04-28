@@ -11,7 +11,7 @@ import net.minecraft.client.Minecraft;
 public class MCUtil {
     
     public static File getMCAssetsDir() {
-        return (File)ReflectionHelper.getPrivateValue(Minecraft.class, null, "fileAssets", "field_110446_Y");
+        return (File)ReflectionHelper.getPrivateValue(Minecraft.class, Minecraft.getMinecraft(), "fileAssets", "field_110446_Y");
     }
     
     public static class ProgressBar {

@@ -33,11 +33,9 @@ import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 /** Responsible for the high level logic of fetching assets. */
 public class AssetDirector {
     
-    static final String NS = "AssetDirector";
-    static final boolean separateDir = Boolean.parseBoolean(System.getProperty("assetDirector.separateDir", "false"));
-    static final File ROOT_DIR = !separateDir ? OsPaths.getDefaultInstallationDir().toFile() : new File(OsPaths.getDefaultInstallationDir().toFile(), "asset_director");
-    static final File AD_DIR = !separateDir ? new File(ROOT_DIR, "asset_director") : ROOT_DIR;
     static final Logger LOGGER = LogManager.getLogger("AssetDirector");
+    static final String NS = "AssetDirector";
+    static final File AD_DIR = getAssetDirectorDir();
     
     public static final String SOUNDS_JSON_REQUESTED = ":tmp:requested";
     
@@ -167,6 +165,8 @@ public class AssetDirector {
     public void preInit() {
         long t0 = System.nanoTime();
         
+        LOGGER.info("Using directory " + AD_DIR);
+        
         ProgressBar bar = MCUtil.ProgressBar.push("AssetDirector - Loading assets", AssetDirectorAPI.jsons.size());
         boolean connectionOK = true;
         
@@ -202,6 +202,30 @@ public class AssetDirector {
         
         long t1 = System.nanoTime();
         LOGGER.debug("AssetDirector pre-init took " + (t1 - t0) / 1_000_000_000.0 + "s.");
+    }
+    
+    private static File getAssetDirectorDir() {
+        File assetsDir = MCUtil.getMCAssetsDir();
+        // The old launcher deletes extra files from the assets directory, so we can't live there. Use `<launcher work dir>/asset_director` instead. 
+        return !isOldLauncher(assetsDir) ? new File(assetsDir, "asset_director") : new File(assetsDir, "../asset_director");
+    }
+    
+    private static boolean isOldLauncher(File assetsDir) {
+        File launcherJson = new File(assetsDir, "../launcher_profiles.json");
+        if(launcherJson.exists()) {
+            try(FileReader fr = new FileReader(launcherJson)){
+                JsonObject object = new Gson().fromJson(fr, JsonObject.class);
+                String launcherVersion = object.get("launcherVersion").getAsJsonObject().get("name").getAsString();
+                LOGGER.debug("Detected old launcher (version " + launcherVersion + ")");
+                
+                return new Version(launcherVersion).compareTo(new Version("1.6.93")) <= 0;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        LOGGER.debug("Couldn't read launcher_profiles.json");
+        return false;
     }
     
 }
