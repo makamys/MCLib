@@ -6,10 +6,12 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -41,35 +43,28 @@ public class AssetFetcher {
     private static final int    DOWNLOAD_TIMEOUT = 10_000, // ms
                                 DOWNLOAD_ATTEMPTS = 3;
     
-    private final File INFO_JSON;
-    
     private static JsonObject manifest;
-    InfoJSON info;
     public Map<String, VersionIndex> versionIndexes = new HashMap<>();
     public Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
-    private Set<String> checkedObjects = new HashSet<>();
+    private Map<String, File> fileMap = new HashMap<>();
+    private static final File NULL_FILE = new File("");
     
-    public File rootDir, adDir;
+    public File assetsDir, adDir;
     
-    public AssetFetcher(File rootDir, File adDir) {
-        this.rootDir = rootDir;
+    public AssetFetcher(File assetsDir, File adDir) {
+        this.assetsDir = assetsDir;
         this.adDir = adDir;
         if(!adDir.exists()) {
         	adDir.mkdirs();
         }
-        INFO_JSON = new File(adDir, "info.json");
-        if(INFO_JSON.exists()) {
-            try {
-                info = loadJson(INFO_JSON, InfoJSON.class);
-            } catch(Exception e) {
-                LOGGER.warn("Failed to load info.json, discarding contents.");
-                e.printStackTrace();
-            }
-        }
-        if(info == null) {
-            info = new InfoJSON();
-        }
+    }
+    
+    public void init() {
+        LOGGER.info("Using directory " + adDir);
+        
+        // clean up incomplete downloads
+        Arrays.stream(adDir.listFiles((dir, name) -> dir.getName().endsWith(".part"))).forEach(f -> f.delete());
     }
 
     public void fetchAsset(String version, String asset) throws Exception {
@@ -99,12 +94,7 @@ public class AssetFetcher {
     }
     
     public boolean fileIsPresent(String hash) {
-        if(!checkedObjects.contains(hash)) {
-            info.updateFileInfo(AssetDirector.instance.getFetcher().getAssetFile(hash));
-            checkedObjects.add(hash);
-        }
-        
-        return info.objectIndex.containsKey(hash);
+        return getAssetFileForRead(hash) != NULL_FILE;
     }
     
     public void fetchForAllVersions(String asset) throws Exception {
@@ -114,17 +104,17 @@ public class AssetFetcher {
     }
     
     private void downloadAsset(String hash) throws IOException {
-        flushInfoJSON(); // If we crashed in the middle of downloading an object pending for removal, it would stay in the objectIndex, and the corrupted download would never get validated. We flush here to avoid this.
-        
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
-        File outFile = getAssetFile(hash);
+        File outFile = getAssetFileForWrite(hash);
+        File outFileTmp = new File(adDir, outFile.getName() + ".part");
         
         for(int i = 0; i < DOWNLOAD_ATTEMPTS; i++) {
-            copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), outFile);
-            if(hash.equals(getSha1(outFile))) {
+            copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), outFileTmp);
+            if(hash.equals(getSha1(outFileTmp))) {
                 // OK
-                info.objectIndex.put(hash, new JsonObject());
-                info.dirty = true;
+                outFile.getParentFile().mkdirs();
+                outFileTmp.renameTo(outFile);
+                fileMap.put(hash, outFile);
                 break;
             } else {
                 LOGGER.warn("Got invalid hash when downloading " + hash + ". Attempt " + (i + 1) + "/" + DOWNLOAD_ATTEMPTS);
@@ -137,7 +127,7 @@ public class AssetFetcher {
         if(versionIndexes.containsKey(version)) return;
         
         // TODO redownload stuff if timestamp in manifest changes?
-        File indexJson = new File(rootDir, VERSION_INDEX_PATH.get(version));
+        File indexJson = new File(adDir, VERSION_INDEX_PATH.get(version));
         if(!indexJson.exists()) {
             downloadVersionIndex(version, indexJson);
         }
@@ -145,7 +135,7 @@ public class AssetFetcher {
         versionIndexes.put(version, vi);
         
         if(!assetIndexes.containsKey(vi.assetsId)) {
-            File assetIndex = new File(rootDir, ASSET_INDEX_PATH.get(vi.assetsId));
+            File assetIndex = new File(adDir, ASSET_INDEX_PATH.get(vi.assetsId));
             if(!assetIndex.exists()) {
                 String url = vi.json.get("assetIndex").getAsJsonObject().get("url").getAsString();
                 copyURLToFile(new URL(url), assetIndex);
@@ -163,7 +153,7 @@ public class AssetFetcher {
     }
     
     public boolean needsFetchJar(String version) {
-        return !new File(rootDir, AssetFetcher.CLIENT_JAR_PATH.get(version)).exists();
+        return !new File(adDir, AssetFetcher.CLIENT_JAR_PATH.get(version)).exists();
     }
     
     private void downloadVersionIndex(String version, File dest) throws Exception {
@@ -198,16 +188,24 @@ public class AssetFetcher {
         return new Gson().fromJson(new InputStreamReader(new BufferedInputStream(stream)), classOfT);
     }
     
-    public Set<String> getObjectIndex(){
-        return info.objectIndex.keySet();
+    public File getAssetFileForRead(String hash) {
+        File file = fileMap.get(hash);
+        if(file == null) {
+            File fileUpper = new File(adDir, "assets/objects/" + hash.substring(0, 2) + "/" + hash);
+            File fileLower = new File(assetsDir, "objects/" + hash.substring(0, 2) + "/" + hash);
+            
+            file = fileUpper.exists() ? fileUpper : fileLower.exists() ? fileLower : NULL_FILE;
+            fileMap.put(hash, file);
+        }
+        return file;
     }
     
-    public File getAssetFile(String hash) {
-        return new File(rootDir, "assets/objects/" + hash.substring(0, 2) + "/" + hash);
+    public File getAssetFileForWrite(String hash) {
+        return new File(adDir, "assets/objects/" + hash.substring(0, 2) + "/" + hash);
     }
     
     public InputStream getAssetInputStream(String hash) throws IOException {
-        return new BufferedInputStream(new FileInputStream(getAssetFile(hash)));
+        return new BufferedInputStream(new FileInputStream(getAssetFileForRead(hash)));
     }
     
     public InputStream getAssetInputStream(String version, String path) throws IOException {
@@ -215,7 +213,8 @@ public class AssetFetcher {
     }
     
     public boolean hashExists(String hash) {
-        return getObjectIndex().contains(hash);
+        File file = fileMap.get(hash);
+        return file != null && file != NULL_FILE;
     }
     
     static String getSha1(File file) {
@@ -240,29 +239,6 @@ public class AssetFetcher {
     private static class ManifestVersionJSON {
         String id;
         String url;
-    }
-    
-    static class InfoJSON {
-        // Objects known to have been present and valid at one point.
-        // Hash verification will be skipped for objects in this set if they still exist.
-        Map<String, JsonObject> objectIndex = new HashMap<>();
-        
-        private transient boolean dirty;
-
-        public void updateFileInfo(File assetFile) {
-            String hash = assetFile.getName();
-            if(assetFile.exists() && (objectIndex.containsKey(hash) || hash.equals(getSha1(assetFile)))) {
-                if(!objectIndex.containsKey(hash)) {
-                    objectIndex.put(hash, new JsonObject());
-                    dirty = true;
-                }
-            } else {
-                if(objectIndex.containsKey(hash)) {
-                    objectIndex.remove(hash);
-                    dirty = true;
-                }
-            }
-        }
     }
     
     public static class AssetIndex {
@@ -295,7 +271,7 @@ public class AssetFetcher {
         public void fetchJar(String version) throws IOException {
             if(jar != null) return;
             
-            File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
+            File clientJar = new File(adDir, CLIENT_JAR_PATH.get(version));
             
             String url = json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
             copyURLToFile(new URL(url), clientJar);   
@@ -304,7 +280,7 @@ public class AssetFetcher {
         public void loadJar(String version) throws IOException {
             if(jar != null) return;
             
-            File clientJar = new File(rootDir, CLIENT_JAR_PATH.get(version));
+            File clientJar = new File(adDir, CLIENT_JAR_PATH.get(version));
             
             this.jar = new JarFile(clientJar);
             jarContents = jar.stream().map(e -> e.getName()).collect(Collectors.toSet());
@@ -316,17 +292,6 @@ public class AssetFetcher {
         
         public InputStream getJarFileStream(String path) throws IOException {
             return jar.getInputStream(jar.getEntry(path));
-        }
-    }
-
-    public void flushInfoJSON() {
-        if(info.dirty) {
-            try(FileWriter writer = new FileWriter(INFO_JSON)){
-                new Gson().toJson(info, writer);
-            } catch(IOException e) {
-                e.printStackTrace();
-            }
-            info.dirty = false;
         }
     }
     

@@ -41,7 +41,7 @@ public class AssetDirector {
     
     static AssetDirector instance;
     
-    private AssetFetcher fetcher = new AssetFetcher(AD_DIR, AD_DIR);
+    private AssetFetcher fetcher = new AssetFetcher(MCUtil.getMCAssetsDir(), AD_DIR);
     private Map<String, JsonObject> soundJsons = new HashMap<>();
     
     static {
@@ -165,7 +165,7 @@ public class AssetDirector {
     public void preInit() {
         long t0 = System.nanoTime();
         
-        LOGGER.info("Using directory " + AD_DIR);
+        fetcher.init();
         
         ProgressBar bar = MCUtil.ProgressBar.push("AssetDirector - Loading assets", AssetDirectorAPI.jsons.size());
         boolean connectionOK = true;
@@ -191,14 +191,7 @@ public class AssetDirector {
         }
         bar.pop();
         
-        fetcher.flushInfoJSON();
         MultiVersionDefaultResourcePack.inject(this);
-        
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                fetcher.flushInfoJSON();
-            }}, "AssetDirector shutdown thread"));
         
         long t1 = System.nanoTime();
         LOGGER.debug("AssetDirector pre-init took " + (t1 - t0) / 1_000_000_000.0 + "s.");
