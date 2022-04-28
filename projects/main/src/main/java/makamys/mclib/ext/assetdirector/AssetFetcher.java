@@ -244,6 +244,7 @@ public class AssetFetcher {
     
     static class InfoJSON {
         // Objects known to have been present and valid at one point.
+        // Hash verification will be skipped for objects in this set if they still exist.
         Map<String, JsonObject> objectIndex = new HashMap<>();
         
         private transient boolean dirty;
