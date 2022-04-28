@@ -1,6 +1,7 @@
 package makamys.mclib.ext.assetdirector;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,10 +23,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-import cpw.mods.fml.common.ProgressManager;
-import cpw.mods.fml.common.ProgressManager.ProgressBar;
 import makamys.mclib.ext.assetdirector.ADConfig.VersionAssets;
 import makamys.mclib.ext.assetdirector.ADConfig.VersionAssets.SoundEvent;
+import makamys.mclib.ext.assetdirector.mc.MCUtil;
+import makamys.mclib.ext.assetdirector.mc.MCUtil.ProgressBar;
+import makamys.mclib.ext.assetdirector.mc.MCUtil.Version;
 import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 
 /** Responsible for the high level logic of fetching assets. */
@@ -41,7 +43,7 @@ public class AssetDirector {
     
     static AssetDirector instance;
     
-    private AssetFetcher fetcher = new AssetFetcher(ROOT_DIR, AD_DIR);
+    private AssetFetcher fetcher = new AssetFetcher(AD_DIR, AD_DIR);
     private Map<String, JsonObject> soundJsons = new HashMap<>();
     
     static {
@@ -80,7 +82,7 @@ public class AssetDirector {
         
         if(downloadCount > 0) {
             LOGGER.info("Downloading resources, this may take a while...");
-            ProgressBar downloadBar = ProgressManager.push("Downloading", downloadCount);
+            ProgressBar downloadBar = ProgressBar.push("Downloading", downloadCount);
             
             for(String version : jarFetchQueue) {
                 downloadBar.step("minecraft.jar, version " + version);
@@ -94,7 +96,7 @@ public class AssetDirector {
                 }
             }
 
-            ProgressManager.pop(downloadBar);
+            downloadBar.pop();
         }
         
         for(String version : jarLoadQueue) {
@@ -162,11 +164,10 @@ public class AssetDirector {
         return fetcher;
     }
 
-    @SuppressWarnings("deprecation")
     public void preInit() {
         long t0 = System.nanoTime();
         
-        ProgressBar bar = ProgressManager.push("AssetDirector - Loading assets", AssetDirectorAPI.jsons.size());
+        ProgressBar bar = MCUtil.ProgressBar.push("AssetDirector - Loading assets", AssetDirectorAPI.jsons.size());
         boolean connectionOK = true;
         
         for(Entry<String, String> entry : AssetDirectorAPI.jsons.entrySet()) {
@@ -188,7 +189,7 @@ public class AssetDirector {
                 }
             }
         }
-        ProgressManager.pop(bar);
+        bar.pop();
         
         fetcher.flushInfoJSON();
         MultiVersionDefaultResourcePack.inject(this);

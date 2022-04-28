@@ -26,7 +26,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import cpw.mods.fml.common.versioning.ComparableVersion;
+import makamys.mclib.ext.assetdirector.mc.MCUtil.Version;
 
 /** Responsible for the implementation details of fetching assets, most notably interfacing with Mojang's API. */
 public class AssetFetcher {
@@ -283,12 +283,12 @@ public class AssetFetcher {
         public String assetsId;
         JarFile jar;
         public Set<String> jarContents;
-        public ComparableVersion version;
+        public Version version;
         
         public VersionIndex(JsonObject json) {
             this.json = json;
             assetsId = json.get("assets").getAsString();
-            this.version = new ComparableVersion(json.get("id").getAsString());
+            this.version = new Version(json.get("id").getAsString());
         }
         
         public void fetchJar(String version) throws IOException {

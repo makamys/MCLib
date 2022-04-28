@@ -17,12 +17,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import makamys.mclib.ext.assetdirector.AssetDirector;
 import makamys.mclib.ext.assetdirector.AssetFetcher;
 import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
 import makamys.mclib.ext.assetdirector.AssetFetcher.VersionIndex;
+import makamys.mclib.ext.assetdirector.mc.MCUtil.Version;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourcePack;
@@ -35,7 +35,7 @@ import static makamys.mclib.ext.assetdirector.AssetDirector.SOUNDS_JSON_REQUESTE
 
 public class MultiVersionDefaultResourcePack implements IResourcePack {
     
-    private static final ComparableVersion v1_13 = new ComparableVersion("1.13");
+    private static final Version v1_13 = new Version("1.13");
     
     private AssetDirector assetDirector;
     private AssetFetcher fetcher;
@@ -96,7 +96,7 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         }
     }
     
-    private String convertPath(String path, ComparableVersion version) {
+    private String convertPath(String path, Version version) {
         if(version.compareTo(v1_13) >= 0) {
             path = path.replaceFirst("^textures/blocks/", "textures/block/");
             path = path.replaceFirst("^textures/items/", "textures/item/");
