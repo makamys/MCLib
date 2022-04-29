@@ -11,7 +11,7 @@ When multiple mods with MCLib embedded are present, calls to shared modules from
 * [`UpdateCheck`](https://github.com/makamys/MCLib/wiki/UpdateCheck): checks for updates and displays the results in a HTML file, with a notification button in the main menu.
 	* Accessed via `MCLibModules.updateCheckAPI`
 	* Example usage: [UCLTest.java](src/main/java/makamys/mclib/updatecheck/test/UCLTest.java)
-* `AssetDirector`: downloader for Mojang's assets and Minecraft jars directly off their servers, allowing use and redistribution of things like sounds without EULA worries.
+* [`AssetDirector`](https://github.com/makamys/MCLib/wiki/AssetDirector): downloader for Mojang's assets and Minecraft jars directly off their servers, allowing use and redistribution of things like sounds without EULA worries.
 	* Accessed via `AssetDirectorAPI`
 	* Example usage: [ADTest.java](src/main/java/makamys/mclib/ext/assetdirector/test/ADTest.java)
 * `SloppyDepLoader`: a dependency loader for optional dependencies, which won't fail if the dependency fails to be located. It makes no guarantee it will locate the requested dependencies, hence its name.
@@ -60,10 +60,6 @@ public void onConstruction(FMLConstructionEvent event) {
 Static helper classes like `SloppyDepLoader` can be used by simply calling their static methods.
 
 Shared modules like `UpdateCheck` require special setup via their respective `*API` classes (e.g. `UpdateCheckAPI`). See the example test files above to see how to use them.
-
-### AssetDirector
-
-Asset downloading commands from `AssetDirector` are exposed through `AssetDirectorAPI`. Create a new ADConfig instance in your mod's FMLConstructionEvent, and use `addObject`, `addSoundEvent` etc. to request the assets you require. This ADConfig is initialized through the use of `AssetDirectorAPI.register(configVar)`.
 
 Check the [wiki](https://github.com/makamys/MCLib/wiki) for more documentation.
 
