@@ -15,7 +15,7 @@ if(!project.hasProperty("test_ad")){
 	}
 }
 
-archivesBaseName = "${project.modid}-main-all-${project.minecraft_version}"
+archivesBaseName = "${project.modid}-all-${project.minecraft_version}"
 
 minecraft {
 	srgExtra "PK: net/sf/cglib makamys/mclib/repackage/net/sf/cglib"

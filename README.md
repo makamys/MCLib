@@ -63,3 +63,7 @@ Refer to [Satchels](https://github.com/makamys/Satchels) for an example of a mod
 # Contributing
 
 The library has some test packages containing test mods that test its features. These packages are excluded from builds normally. To enable them, add `-Ptest_foo` and such to your Gradle command.
+
+# License
+
+The entirely self-contained `makamys.mclib.ccl` package is licensed under the terms of the [Lesser GNU Public License Version 2.1](COPYING.LESSER). The rest of the project is licensed under the [Unlicense](UNLICENSE).
