@@ -169,11 +169,22 @@ public class AssetFetcher {
     
     private void copyURLToFile(URL source, File destination) throws IOException {
         LOGGER.trace("Downloading " + source + " to " + destination);
-        FileUtils.copyURLToFile(source, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
+        try {
+            FileUtils.copyURLToFile(source, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
+        } catch(IOException e) {
+            LOGGER.error("Failed to download " + source + " to " + destination);
+            throw e;
+        }
     }
     
     private <T> T downloadJson(String url, Class<T> classOfT) throws Exception {
-        return loadJson(new URL(url).openStream(), classOfT);
+        LOGGER.trace("Downloading JSON at " + url);
+        try {
+            return loadJson(new URL(url).openStream(), classOfT);
+        } catch(Exception e) {
+            LOGGER.error("Failed to download JSON at " + url);
+            throw e;
+        }
     }
     
     private <T> T loadJson(File file, Class<T> classOfT) throws Exception {
