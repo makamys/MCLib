@@ -2,8 +2,6 @@ package makamys.mclib.ext.assetdirector;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -48,7 +46,6 @@ public class AssetDirector {
         instance = new AssetDirector();
     }
     
-    @SuppressWarnings("deprecation")
     private void parseJson(String json, String modid) throws Exception {
         ADConfig config = new Gson().fromJson(json, ADConfig.class);
         
@@ -217,7 +214,7 @@ public class AssetDirector {
             try(FileReader fr = new FileReader(launcherJson)){
                 JsonObject object = new Gson().fromJson(fr, JsonObject.class);
                 String launcherVersion = object.get("launcherVersion").getAsJsonObject().get("name").getAsString();
-                LOGGER.debug("Detected old launcher (version " + launcherVersion + ")");
+                LOGGER.debug("Detected official launcher (version " + launcherVersion + ")");
                 
                 return new Version(launcherVersion).compareTo(new Version("1.6.93")) <= 0;
             } catch (Exception e) {
@@ -225,7 +222,7 @@ public class AssetDirector {
             }
         }
         
-        LOGGER.debug("Couldn't read launcher_profiles.json");
+        LOGGER.debug("Couldn't read launcher_profiles.json. Assuming official launcher is not used.");
         return false;
     }
     
