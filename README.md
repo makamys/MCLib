@@ -66,4 +66,4 @@ The library has some test packages containing test mods that test its features. 
 
 # License
 
-See [LICENSE.md].
+See [LICENSE.md](LICENSE.md).
