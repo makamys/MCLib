@@ -213,10 +213,17 @@ public class AssetDirector {
         if(launcherJson.exists()) {
             try(FileReader fr = new FileReader(launcherJson)){
                 JsonObject object = new Gson().fromJson(fr, JsonObject.class);
-                String launcherVersion = object.get("launcherVersion").getAsJsonObject().get("name").getAsString();
-                LOGGER.debug("Detected official launcher (version " + launcherVersion + ")");
-                
-                return new Version(launcherVersion).compareTo(new Version("1.6.93")) <= 0;
+                JsonObject launcherVersionObj = object.getAsJsonObject("launcherVersion");
+                if(launcherVersionObj != null) {
+                    JsonPrimitive name = launcherVersionObj.getAsJsonPrimitive("name");
+                    if(name.isString()) {
+                        String launcherVersion = name.getAsString();
+                        
+                        LOGGER.debug("Detected official launcher (version " + launcherVersion + ")");
+                        
+                        return new Version(launcherVersion).compareTo(new Version("1.6.93")) <= 0;
+                    }
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
