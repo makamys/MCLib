@@ -105,7 +105,7 @@ public class AssetFetcher {
         File outFileTmp = new File(adDir, outFile.getName() + ".part");
         
         for(int i = 0; i < DOWNLOAD_ATTEMPTS; i++) {
-            copyURLToFile(new URL(RESOURCES_ENDPOINT + relPath), outFileTmp);
+            copyURLToFile(RESOURCES_ENDPOINT + relPath, outFileTmp);
             if(hash.equals(getSha1(outFileTmp))) {
                 // OK
                 outFile.getParentFile().mkdirs();
@@ -134,7 +134,7 @@ public class AssetFetcher {
             File assetIndex = new File(adDir, ASSET_INDEX_PATH.get(vi.assetsId));
             if(!assetIndex.exists()) {
                 String url = vi.json.get("assetIndex").getAsJsonObject().get("url").getAsString();
-                copyURLToFile(new URL(url), assetIndex);
+                copyURLToFile(url, assetIndex);
             }
             assetIndexes.put(vi.assetsId, new AssetIndex(loadJson(assetIndex, JsonObject.class)));
         }
@@ -160,17 +160,18 @@ public class AssetFetcher {
         for(JsonElement verElem : manifest.get("versions").getAsJsonArray()) {
             ManifestVersionJSON ver = new Gson().fromJson(verElem, ManifestVersionJSON.class);
             if(ver.id.equals(version)) {
-                copyURLToFile(new URL(ver.url), dest);
+                copyURLToFile(ver.url, dest);
                 return;
             }
         }
         LOGGER.error("Game version " + version + " could not be found in manifest json.");
     }
     
-    private void copyURLToFile(URL source, File destination) throws IOException {
+    private void copyURLToFile(String source, File destination) throws IOException {
+        source = source.replace("https://", "http://");
         LOGGER.trace("Downloading " + source + " to " + destination);
         try {
-            FileUtils.copyURLToFile(source, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
+            FileUtils.copyURLToFile(new URL(source), destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
         } catch(IOException e) {
             LOGGER.error("Failed to download " + source + " to " + destination);
             throw e;
@@ -178,6 +179,7 @@ public class AssetFetcher {
     }
     
     private <T> T downloadJson(String url, Class<T> classOfT) throws Exception {
+        url = url.replace("https://", "http://");
         LOGGER.trace("Downloading JSON at " + url);
         try {
             return loadJson(new URL(url).openStream(), classOfT);
@@ -281,7 +283,7 @@ public class AssetFetcher {
             File clientJar = new File(adDir, CLIENT_JAR_PATH.get(version));
             
             String url = json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
-            copyURLToFile(new URL(url), clientJar);   
+            copyURLToFile(url, clientJar);   
         }
         
         public void loadJar(String version) throws IOException {
