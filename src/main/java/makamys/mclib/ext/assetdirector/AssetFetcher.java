@@ -46,6 +46,8 @@ public class AssetFetcher {
     private Map<String, File> fileMap = new HashMap<>();
     private static final File NULL_FILE = new File("");
     
+    private URLMassager urlMassager = new URLMassager();
+    
     public File assetsDir, adDir;
     
     public AssetFetcher(File assetsDir, File adDir) {
@@ -168,23 +170,23 @@ public class AssetFetcher {
     }
     
     private void copyURLToFile(String source, File destination) throws IOException {
-        source = source.replace("https://", "http://");
-        LOGGER.trace("Downloading " + source + " to " + destination);
         try {
-            FileUtils.copyURLToFile(new URL(source), destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
+            URL url = urlMassager.toURL(source);
+            LOGGER.trace("Downloading " + url + " to " + destination);
+            FileUtils.copyURLToFile(url, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
         } catch(IOException e) {
             LOGGER.error("Failed to download " + source + " to " + destination);
             throw e;
         }
     }
     
-    private <T> T downloadJson(String url, Class<T> classOfT) throws Exception {
-        url = url.replace("https://", "http://");
-        LOGGER.trace("Downloading JSON at " + url);
+    private <T> T downloadJson(String urlStr, Class<T> classOfT) throws Exception {
         try {
-            return loadJson(new URL(url).openStream(), classOfT);
+            URL url = urlMassager.toURL(urlStr);
+            LOGGER.trace("Downloading JSON at " + url);
+            return loadJson(url.openStream(), classOfT);
         } catch(Exception e) {
-            LOGGER.error("Failed to download JSON at " + url);
+            LOGGER.error("Failed to download JSON at " + urlStr);
             throw e;
         }
     }
