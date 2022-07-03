@@ -29,15 +29,15 @@ import makamys.mclib.ext.assetdirector.mc.MCUtil.Version;
 /** Responsible for the implementation details of fetching assets, most notably interfacing with Mojang's API. */
 public class AssetFetcher {
     
-    final static String MANIFEST_ENDPOINT = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    final static String RESOURCES_ENDPOINT = "https://resources.download.minecraft.net";
+    final static String MANIFEST_ENDPOINT = System.getProperty("assetDirector.manifestEndpoint", "https://launchermeta.mojang.com/mc/game/version_manifest.json");
+    final static String RESOURCES_ENDPOINT = System.getProperty("assetDirector.resourcesEndpoint", "https://resources.download.minecraft.net");
     
     final static String ASSET_INDEX_PATH = "assets/indexes/%s.json";
     final static String CLIENT_JAR_PATH = "versions/%s/%s.jar";
     final static String VERSION_INDEX_PATH = "versions/%s/%s.json";
     
-    private static final int    DOWNLOAD_TIMEOUT = 10_000, // ms
-                                DOWNLOAD_ATTEMPTS = 3;
+    private static final int DOWNLOAD_TIMEOUT = Integer.parseInt(System.getProperty("assetDirector.downloadTimeout", "10000")), // ms
+                             DOWNLOAD_ATTEMPTS = Integer.parseInt(System.getProperty("assetDirector.downloadAttempts", "3"));
     
     private static JsonObject manifest;
     public Map<String, VersionIndex> versionIndexes = new HashMap<>();
