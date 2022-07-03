@@ -219,7 +219,7 @@ public class AssetDirector {
                     if(name.isString()) {
                         String launcherVersion = name.getAsString();
                         
-                        LOGGER.debug("Detected official launcher (version " + launcherVersion + ")");
+                        LOGGER.debug("Detected official launcher (version " + launcherVersion + "). Will use alternative directory location.");
                         
                         return new Version(launcherVersion).compareTo(new Version("1.6.93")) <= 0;
                     }
