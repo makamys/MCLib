@@ -32,9 +32,9 @@ public class AssetFetcher {
     final static String MANIFEST_ENDPOINT = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     final static String RESOURCES_ENDPOINT = "https://resources.download.minecraft.net";
     
-    final static StringTemplate ASSET_INDEX_PATH = new StringTemplate("assets/indexes/{}.json");
-    final static StringTemplate CLIENT_JAR_PATH = new StringTemplate("versions/{}/{}.jar");
-    final static StringTemplate VERSION_INDEX_PATH = new StringTemplate("versions/{}/{}.json");
+    final static String ASSET_INDEX_PATH = "assets/indexes/%s.json";
+    final static String CLIENT_JAR_PATH = "versions/%s/%s.jar";
+    final static String VERSION_INDEX_PATH = "versions/%s/%s.json";
     
     private static final int    DOWNLOAD_TIMEOUT = 10_000, // ms
                                 DOWNLOAD_ATTEMPTS = 3;
@@ -125,7 +125,7 @@ public class AssetFetcher {
         if(versionIndexes.containsKey(version)) return;
         
         // TODO redownload stuff if timestamp in manifest changes?
-        File indexJson = new File(adDir, VERSION_INDEX_PATH.get(version));
+        File indexJson = new File(adDir, String.format(VERSION_INDEX_PATH, version, version));
         if(!indexJson.exists()) {
             downloadVersionIndex(version, indexJson);
         }
@@ -133,7 +133,7 @@ public class AssetFetcher {
         versionIndexes.put(version, vi);
         
         if(!assetIndexes.containsKey(vi.assetsId)) {
-            File assetIndex = new File(adDir, ASSET_INDEX_PATH.get(vi.assetsId));
+            File assetIndex = new File(adDir, String.format(ASSET_INDEX_PATH, vi.assetsId));
             if(!assetIndex.exists()) {
                 String url = vi.json.get("assetIndex").getAsJsonObject().get("url").getAsString();
                 copyURLToFile(url, assetIndex);
@@ -151,7 +151,7 @@ public class AssetFetcher {
     }
     
     public boolean needsFetchJar(String version) {
-        return !new File(adDir, AssetFetcher.CLIENT_JAR_PATH.get(version)).exists();
+        return !new File(adDir, String.format(AssetFetcher.CLIENT_JAR_PATH, version, version)).exists();
     }
     
     private void downloadVersionIndex(String version, File dest) throws Exception {
@@ -282,7 +282,7 @@ public class AssetFetcher {
         public void fetchJar(String version) throws IOException {
             if(jar != null) return;
             
-            File clientJar = new File(adDir, CLIENT_JAR_PATH.get(version));
+            File clientJar = new File(adDir, String.format(CLIENT_JAR_PATH, version, version));
             
             String url = json.get("downloads").getAsJsonObject().get("client").getAsJsonObject().get("url").getAsString();
             copyURLToFile(url, clientJar);   
@@ -291,7 +291,7 @@ public class AssetFetcher {
         public void loadJar(String version) throws IOException {
             if(jar != null) return;
             
-            File clientJar = new File(adDir, CLIENT_JAR_PATH.get(version));
+            File clientJar = new File(adDir, String.format(CLIENT_JAR_PATH, version, version));
             
             this.jar = new JarFile(clientJar);
             jarContents = jar.stream().map(e -> e.getName()).collect(Collectors.toSet());
@@ -303,18 +303,6 @@ public class AssetFetcher {
         
         public InputStream getJarFileStream(String path) throws IOException {
             return jar.getInputStream(jar.getEntry(path));
-        }
-    }
-    
-    static final class StringTemplate {
-        private String template;
-        
-        public StringTemplate(String template){
-            this.template = template;
-        }
-        
-        public String get(String replacement) {
-            return template.replaceAll("\\{\\}", replacement);
         }
     }
     
