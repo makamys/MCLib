@@ -30,7 +30,7 @@ import makamys.mclib.ext.assetdirector.mc.MCUtil.Version;
 public class AssetFetcher {
     
     final static String MANIFEST_ENDPOINT = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    final static String RESOURCES_ENDPOINT = "http://resources.download.minecraft.net";
+    final static String RESOURCES_ENDPOINT = "https://resources.download.minecraft.net";
     
     final static StringTemplate ASSET_INDEX_PATH = new StringTemplate("assets/indexes/{}.json");
     final static StringTemplate CLIENT_JAR_PATH = new StringTemplate("versions/{}/{}.jar");
