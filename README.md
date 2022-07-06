@@ -42,9 +42,27 @@ dependencies {
 	}
 }
 ```
-Notes:
-* This snippet requires a `shade` configuration to work, see [the above link](http://web.archive.org/web/20150403035341/http://forgegradle.readthedocs.org/en/FG_1.2/user-guide/shading/).
-* In place of `<VERSION>`, use a release number (e.g. `0.3.1`) or a commit hash (e.g. `22cd459`).
+
+In place of `<VERSION>`, use a release number (e.g. `0.3.4`).
+
+### Shade configuration
+
+The above snippet assumes there is a `shade` configuration in your build script. If there isn't, you can use the below one as an example (the `configurations` block has to go before the `dependencies` block). For additional explanation on what this does, see [ForgeGradle's shading tutorial](http://web.archive.org/web/20150403035341/http://forgegradle.readthedocs.org/en/FG_1.2/user-guide/shading/).
+
+```gradle
+configurations {
+    shade
+    compile.extendsFrom shade
+}
+
+jar {
+    configurations.shade.each { dep ->
+        from(project.zipTree(dep)){
+            exclude 'META-INF', 'META-INF/**'
+        }
+    }
+}
+```
 
 ## Using the library
 
@@ -63,7 +81,7 @@ Shared modules like `UpdateCheck` require special setup via their respective `*A
 
 Check the [wiki](https://github.com/makamys/MCLib/wiki) for more documentation.
 
-Refer to [Satchels](https://github.com/makamys/Satchels) for an example of a mod using this library.
+If you want to see some examples of the library in action, see [Satchels](https://github.com/makamys/Satchels) and [Et Futurum Requiem](https://github.com/Roadhog360/Et-Futurum-Requiem).
 
 # Contributing
 
