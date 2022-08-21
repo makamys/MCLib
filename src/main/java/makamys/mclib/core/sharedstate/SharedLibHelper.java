@@ -68,7 +68,7 @@ public class SharedLibHelper {
         return getNewestLibPackage().equals(thisLibPackage);
     }
     
-    private static String getNewestLibPackage() {
+    public static String getNewestLibPackage() {
         if(!Loader.instance().hasReachedState(LoaderState.PREINITIALIZATION)) {
             throw new IllegalStateException("Shared module was called before mod construction phase ended, this is not allowed.");
         }
@@ -101,11 +101,12 @@ public class SharedLibHelper {
     }
     
     public static String toRelativeClassName(String className) {
-        if(className.startsWith(thisLibPackage)) {
-            return className.substring(thisLibPackage.length() + 1);
-        } else {
-            throw new IllegalArgumentException(className + " does not start with " + thisLibPackage);
+        for(String libPackage : existingLibPackages) {
+            if(className.startsWith(libPackage)) {
+                return className.substring(libPackage.length() + 1);
+            }
         }
+        throw new IllegalArgumentException(className + " is not inside any registered MCLib package.");
     }
 
     public static Class<?> findNewestLibClass(Class<?> clazz) {

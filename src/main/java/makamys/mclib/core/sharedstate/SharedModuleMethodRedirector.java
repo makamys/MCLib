@@ -3,7 +3,6 @@ package makamys.mclib.core.sharedstate;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import makamys.mclib.core.MCLib;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 
@@ -14,15 +13,18 @@ import net.sf.cglib.proxy.MethodProxy;
 public class SharedModuleMethodRedirector implements MethodInterceptor {
 
     private Field field;
+    private boolean isNewest;
+    
     private Object original;
     
     public SharedModuleMethodRedirector(Field field) {
         this.field = field;
+        this.isNewest = field.getDeclaringClass().getName().startsWith(SharedLibHelper.getNewestLibPackage());
     }
 
     @Override
     public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
-        if(SharedLibHelper.isNewestLib(MCLib.instance)) {
+        if(isNewest) {
             if(original == null) {
                 try {
                     original = field.getType().getConstructor().newInstance();
