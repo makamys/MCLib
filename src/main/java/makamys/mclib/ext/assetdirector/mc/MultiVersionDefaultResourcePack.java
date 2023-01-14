@@ -104,21 +104,23 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
                     .get(scratch.namespace + "/" + scratch.name);
         }
         
-        ResourceLocation mcResLocOld = new ResourceLocation("minecraft", convertPath(resLoc.getResourcePath(), v1_7_10));
-        ResourceLocation mcResLocNew = new ResourceLocation("minecraft", convertPath(resLoc.getResourcePath(), v1_13));
         scratch.mcResPack = null;
-        List<IResourcePack> mcResPacks = ResourcePackUtil.getMinecraftResourcePackList();
-        for(int i = mcResPacks.size() - 1; i >= 0; i--) {
-            IResourcePack resPack = mcResPacks.get(i);
-            if(!ResourcePackUtil.isBuiltIn(resPack)) {
-                if(resPack.resourceExists(mcResLocOld)) {
-                    scratch.mcResPack = resPack;
-                    scratch.mcResLoc = mcResLocOld;
-                    break;
-                } else if(!mcResLocOld.equals(mcResLocNew) && resPack.resourceExists(mcResLocNew)) {
-                    scratch.mcResPack = resPack;
-                    scratch.mcResLoc = mcResLocNew;
-                    break;
+        if(!resLoc.getResourcePath().equals("sounds.json")) {
+            ResourceLocation mcResLocOld = new ResourceLocation("minecraft", convertPath(resLoc.getResourcePath(), v1_7_10));
+            ResourceLocation mcResLocNew = new ResourceLocation("minecraft", convertPath(resLoc.getResourcePath(), v1_13));
+            List<IResourcePack> mcResPacks = ResourcePackUtil.getMinecraftResourcePackList();
+            for(int i = mcResPacks.size() - 1; i >= 0; i--) {
+                IResourcePack resPack = mcResPacks.get(i);
+                if(!ResourcePackUtil.isBuiltIn(resPack)) {
+                    if(resPack.resourceExists(mcResLocOld)) {
+                        scratch.mcResPack = resPack;
+                        scratch.mcResLoc = mcResLocOld;
+                        break;
+                    } else if(!mcResLocOld.equals(mcResLocNew) && resPack.resourceExists(mcResLocNew)) {
+                        scratch.mcResPack = resPack;
+                        scratch.mcResLoc = mcResLocNew;
+                        break;
+                    }
                 }
             }
         }
