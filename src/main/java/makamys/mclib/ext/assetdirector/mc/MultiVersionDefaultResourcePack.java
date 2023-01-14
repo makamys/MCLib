@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import makamys.mclib.ext.assetdirector.AssetDirector;
 import makamys.mclib.ext.assetdirector.AssetFetcher;
+import makamys.mclib.ext.assetdirector.ResourcePackUtil;
 import makamys.mclib.ext.assetdirector.AssetFetcher.AssetIndex;
 import makamys.mclib.ext.assetdirector.AssetFetcher.VersionIndex;
 import makamys.mclib.ext.assetdirector.mc.MCUtil.Version;
@@ -54,6 +55,12 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     
     public InputStream getInputStream(ResourceLocation resLoc) throws IOException {
         parseName(resLoc);
+        
+        if(scratch.mcResPack != null) {
+            // Get overridden by a user-added resource of the same name in the minecraft namespace
+            return scratch.mcResPack.getInputStream(scratch.mcResLoc);
+        }
+        
         InputStream is = null;
         if(!scratch.isInJar) {
             is = fetcher.getAssetInputStream(scratch.hash);
@@ -74,7 +81,8 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         if(!resLoc.getResourceDomain().startsWith("minecraft_")) return false;
         
         parseName(resLoc);
-        return scratch.isInJar ? true : fetcher.hashExists(scratch.hash);
+        
+        return scratch.isInJar ? true : fetcher.hashExists(scratch.hash) || scratch.mcResPack != null;
     }
     
     private void parseName(ResourceLocation resLoc){
@@ -93,6 +101,17 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
             scratch.isInJar = false;
             scratch.hash = fetcher.assetIndexes.get(scratch.vi.assetsId).nameToHash
                     .get(scratch.namespace + "/" + scratch.name);
+        }
+        
+        scratch.mcResLoc = new ResourceLocation("minecraft", scratch.name);
+        scratch.mcResPack = null;
+        List<IResourcePack> mcResPacks = ResourcePackUtil.getMinecraftResourcePackList();
+        for(int i = mcResPacks.size() - 1; i >= 0; i--) {
+            IResourcePack resPack = mcResPacks.get(i);
+            if(!ResourcePackUtil.isBuiltIn(resPack) && resPack.resourceExists(scratch.mcResLoc)) {
+                scratch.mcResPack = resPack;
+                break;
+            }
         }
     }
     
@@ -149,5 +168,7 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         VersionIndex vi;
         boolean isInJar;
         String hash;
+        ResourceLocation mcResLoc;
+        IResourcePack mcResPack;
     }
 }
