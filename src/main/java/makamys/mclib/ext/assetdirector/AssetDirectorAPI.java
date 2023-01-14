@@ -24,6 +24,7 @@ public class AssetDirectorAPI {
     public static void register(ADConfig config) {
         if(!active) return;
         
+        // We convert configs to JSON strings to remove class identity
         jsons.put(Loader.instance().activeModContainer().getModId(), new Gson().toJson(config));
     }
     

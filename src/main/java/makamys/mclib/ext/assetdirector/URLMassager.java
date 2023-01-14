@@ -12,6 +12,9 @@ import java.util.Set;
 
 import javax.net.ssl.SSLHandshakeException;
 
+/** <p>Old versions of Java like the one used by the Curse launcher don't support the new SSL cipher that is used by Mojang's website.
+ *  <p>To work around the problem, we retry failed connections using HTTP instead of HTTPS. That's what this class helps with.
+ */
 public class URLMassager {
 
     private Set<String> checkedHosts = new HashSet<>();
