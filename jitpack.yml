@@ -1,4 +1,4 @@
-install:
+before_install:
 # jitpack doesn't come with Python, so we have to do this
 # https://github.com/facebook/buck/pull/2014
    - mkdir python_tmp
