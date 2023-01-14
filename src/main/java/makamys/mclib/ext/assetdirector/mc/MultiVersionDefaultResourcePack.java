@@ -49,7 +49,7 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
 
     @Override
     public Set getResourceDomains() {
-        return fetcher.assetIndexes.keySet().stream().map(v -> "minecraft_" + v).collect(Collectors.toSet());
+        return fetcher.versionIndexes.keySet().stream().map(v -> "minecraft_" + v).collect(Collectors.toSet());
     }
     
     public InputStream getInputStream(ResourceLocation resLoc) throws IOException {
