@@ -45,6 +45,8 @@ dependencies {
 
 In place of `<VERSION>`, use a release number (e.g. `0.3.4`).
 
+> A commit hash can also be used, but doing this in production is discouraged as it may make MCLib unable to correctly select the highest version of the library.
+
 ### Shade configuration
 
 The above snippet assumes there is a `shade` configuration in your build script. If there isn't, you can use the below one as an example (the `configurations` block has to go before the `dependencies` block). For additional explanation on what this does, see [ForgeGradle's shading tutorial](http://web.archive.org/web/20150403035341/http://forgegradle.readthedocs.org/en/FG_1.2/user-guide/shading/).
