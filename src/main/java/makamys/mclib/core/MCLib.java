@@ -20,6 +20,7 @@ import makamys.mclib.core.sharedstate.SharedLibHelper;
 public class MCLib {
     
     public static final String VERSION = "@VERSION@";
+    public static final String RESOURCES_VERSION = "v0_3_7";
     
     public static MCLib instance;
     

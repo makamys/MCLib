@@ -17,6 +17,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import makamys.mclib.updatecheck.UpdateCheckLib.UpdateCategory;
+import makamys.mclib.core.MCLib;
 import makamys.mclib.updatecheck.ResultHTMLRenderer;
 
 public class ResultHTMLRenderer {
@@ -64,7 +65,7 @@ public class ResultHTMLRenderer {
             outFile.delete();
         } else {
             try (FileOutputStream out = new FileOutputStream(outFile)){
-                String template = IOUtils.toString(ResultHTMLRenderer.class.getClassLoader().getResourceAsStream("resources/mclib/updatecheck/updates.template.html"));
+                String template = IOUtils.toString(ResultHTMLRenderer.class.getClassLoader().getResourceAsStream("resources/mclib/" + MCLib.RESOURCES_VERSION + "/updatecheck/updates.template.html"));
                 String html = template.replace("{table}", generateTables());
                 IOUtils.write(html, out, "utf8");
                 LOGGER.info("Wrote update check results to " + outFile);
