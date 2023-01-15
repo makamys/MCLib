@@ -39,6 +39,7 @@ public class UCLTest {
         String mock_1_0 = MockHelper.uploadMockText("mock://1.0.json", new UpdateJsonBuilder().version("1.0").build());
         String mock_1_1 = MockHelper.uploadMockText("mock://1.1.json", new UpdateJsonBuilder().version("1.1").build());
         String mock_1_0_homepages = MockHelper.uploadMockText("mock://1.0-homepages.json", new UpdateJsonBuilder().version("1.0").homepage("GitHub", "https://github.com/").homepage("CurseForge", "https://curseforge.com/").homepage("Modrinth", "https://modrinth.com/").build());
+        String mock_1_0_troll = MockHelper.uploadMockText("mock://1.0-troll.json", new UpdateJsonBuilder().version("1.0").homepage("TrollHub", "\"></a><script>alert(\"trolled (using homepage url)\");</script><a href=\"").build());
         
         // outdated mod via network (json returns 1.7.10-35.4.1 as the version and https://github.com/makamys/MAtmos/releases as the homepage as of now)
         uc.submitModTask(MODID, "https://raw.githubusercontent.com/makamys/MAtmos/master/updatejson/update-matmos.json");
@@ -57,6 +58,9 @@ public class UCLTest {
         
         // mod with weird version
         uc.submitTask("weird mod", "@VERSION@", UpdateCheckAPI.MODS_CATEGORY_ID, mock_1_0);
+        
+        // mod with trolley name and homepage url
+        uc.submitTask("</td><script>alert(\"trolled (using mod name)\");</script><td>", "0.8", UpdateCheckAPI.MODS_CATEGORY_ID, mock_1_0_troll);
         
         // bad json url, resource pack test
         uc.submitTask("bad res pack", "0.1", UpdateCheckAPI.RESOURCE_PACKS_CATEGORY_ID, "bad json url");
