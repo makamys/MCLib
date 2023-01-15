@@ -4,7 +4,10 @@ import static makamys.mclib.updatecheck.UpdateCheckLib.LOGGER;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -27,16 +30,14 @@ class UpdateCheckTask implements Supplier<UpdateCheckTask.Result> {
     ComparableVersion currentVersion;
     UpdateCategory category;
     String updateJSONUrl;
-    String homepage = "";
-    
-    public static final boolean TEST_MODE = Boolean.parseBoolean(System.getProperty("updateCheckLib.test", "false"));
-    private static final String MOCK_PREFIX = "mock://";
+    List<Hyperlink> homepages;
     
     public UpdateCheckTask(String name, String currentVersion, UpdateCategory category, String updateJSONUrl) {
         this.name = name;
         this.currentVersion = new ComparableVersion(currentVersion);
         this.category = category;
         this.updateJSONUrl = updateJSONUrl;
+        this.homepages = new ArrayList<>();
     }
     
     @Override
@@ -64,20 +65,37 @@ class UpdateCheckTask implements Supplier<UpdateCheckTask.Result> {
     
     private ComparableVersion solveVersion() throws Exception {
         if(category == null) return null;
-        if(TEST_MODE && updateJSONUrl.startsWith(MOCK_PREFIX)) return mockSolveVersion();
         
-        URL url = new URL(updateJSONUrl);
-        InputStream contents = url.openStream();
+        String jasonString;
+        
+        if(MockHelper.isTestMode() && MockHelper.isMockUrl(updateJSONUrl)) {
+            jasonString = MockHelper.downloadMockText(updateJSONUrl);
+        } else {
+            URL url = new URL(updateJSONUrl);
+            InputStream contents = url.openStream();
 
-        String jasonString = IOUtils.toString(contents, "UTF-8");
+            jasonString = IOUtils.toString(contents, "UTF-8");
+        }
 
         JsonObject jason = new JsonParser().parse(jasonString).getAsJsonObject();
         
         JsonElement homepageElem = jason.get("homepage");
-        if(homepageElem instanceof JsonPrimitive) {
-            homepage = homepageElem.getAsString();
+        JsonElement homepagesElem = jason.get("homepages");
+        if(homepageElem instanceof JsonPrimitive && homepagesElem == null) {
+            homepages.add(new Hyperlink(homepageElem.getAsString()));
+        } else if(homepagesElem instanceof JsonObject && homepageElem == null) {
+            JsonObject homepagesObj = (JsonObject)homepagesElem;
+            
+            for(Entry<String, JsonElement> e : homepagesObj.entrySet()) {
+                JsonElement value = e.getValue();
+                if(value instanceof JsonPrimitive) {
+                    homepages.add(new Hyperlink(value.getAsString(), e.getKey()));
+                } else {
+                    LOGGER.log(getErrorLevel(), "Invalid value for homepage " + e.getKey() + " in " + updateJSONUrl);
+                }
+            }
         } else {
-            LOGGER.log(getErrorLevel(), "Failed to locate 'homepage' element in " + updateJSONUrl);
+            LOGGER.log(getErrorLevel(), "Failed to locate homepage(s) in " + updateJSONUrl);
         }
         
         String channel = ConfigUCL.promoChannel;
@@ -109,10 +127,6 @@ class UpdateCheckTask implements Supplier<UpdateCheckTask.Result> {
         return null;
     }
     
-    private ComparableVersion mockSolveVersion() {
-        return new ComparableVersion(updateJSONUrl.substring(MOCK_PREFIX.length()));
-    }
-    
     public static class Result {
         UpdateCheckTask task;
         public ComparableVersion newVersion;
@@ -132,6 +146,20 @@ class UpdateCheckTask implements Supplier<UpdateCheckTask.Result> {
         
         public boolean isInteresting() {
             return (!ConfigUCL.hideErrored && newVersion == null) || foundUpdate();
+        }
+    }
+    
+    public static class Hyperlink {
+        final String url;
+        final String display;
+        
+        public Hyperlink(String url, String display) {
+            this.url = url;
+            this.display = display;
+        }
+        
+        public Hyperlink(String url) {
+            this(url, url);
         }
     }
 }

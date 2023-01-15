@@ -34,8 +34,11 @@ public class ResultHTMLRenderer {
             + "		<td>%s</td>\n"
             + "		<td>%s</td>\n"
             + "		<td>%s</td>\n"
-            + "		<td><a href=\"%s\">%s</a></td>\n"
+            + "		<td>%s</td>\n"
             + "	</tr>";
+    
+    private static final String TABLE_HOMEPAGE_TEMPLATE = "<a href=\"%s\">%s</a>";
+    private static final String TABLE_HOMEPAGE_SEPARATOR = " | ";
     
     private static final String
     FIELD_NAME = "Name",
@@ -82,7 +85,8 @@ public class ResultHTMLRenderer {
                 String rows = "";
                 for(UpdateCheckTask.Result result : interestingResults) {
                     String newVersionStr = result.newVersion != null ? result.newVersion.toString() : "<b>ERROR</b>";
-                    rows += String.format(TABLE_ROW_TEMPLATE, result.task.name, result.task.currentVersion, newVersionStr, result.task.homepage, result.task.homepage);
+                    String homepagesStr = String.join(TABLE_HOMEPAGE_SEPARATOR, result.task.homepages.stream().map(hp -> String.format(TABLE_HOMEPAGE_TEMPLATE, hp.url, hp.display)).toArray(String[]::new));
+                    rows += String.format(TABLE_ROW_TEMPLATE, result.task.name, result.task.currentVersion, newVersionStr, homepagesStr);
                 }
                 
                 tables.append(String.format(TABLE_TEMPLATE, String.format(TABLE_TITLE_TEMPLATE, tableTitle), FIELD_NAME, FIELD_CURRENT_VERSION, FIELD_NEW_VERSION, FIELD_URL, rows));
