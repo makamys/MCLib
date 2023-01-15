@@ -66,21 +66,21 @@ class UpdateCheckTask implements Supplier<UpdateCheckTask.Result> {
     private ComparableVersion solveVersion() throws Exception {
         if(category == null) return null;
         
-        String jasonString;
+        String jsonString;
         
         if(MockHelper.isTestMode() && MockHelper.isMockUrl(updateJSONUrl)) {
-            jasonString = MockHelper.downloadMockText(updateJSONUrl);
+            jsonString = MockHelper.downloadMockText(updateJSONUrl);
         } else {
             URL url = new URL(updateJSONUrl);
             InputStream contents = url.openStream();
 
-            jasonString = IOUtils.toString(contents, "UTF-8");
+            jsonString = IOUtils.toString(contents, "UTF-8");
         }
 
-        JsonObject jason = new JsonParser().parse(jasonString).getAsJsonObject();
+        JsonObject json = new JsonParser().parse(jsonString).getAsJsonObject();
         
-        JsonElement homepageElem = jason.get("homepage");
-        JsonElement homepagesElem = jason.get("homepages");
+        JsonElement homepageElem = json.get("homepage");
+        JsonElement homepagesElem = json.get("homepages");
         if(homepageElem instanceof JsonPrimitive && homepagesElem == null) {
             homepages.add(new Hyperlink(homepageElem.getAsString()));
         } else if(homepagesElem instanceof JsonObject && homepageElem == null) {
@@ -102,7 +102,7 @@ class UpdateCheckTask implements Supplier<UpdateCheckTask.Result> {
         
         ComparableVersion categoryVersion = new ComparableVersion(category.version);
         
-        JsonElement promos = jason.get("promos");
+        JsonElement promos = json.get("promos");
         if(promos instanceof JsonObject) {
             try {
                 ComparableVersion newestLowerCategoryVersion = Collections.max(((JsonObject)promos).entrySet().stream().map(e -> new ComparableVersion(e.getKey().split("-")[0])).filter(v -> v.compareTo(categoryVersion) <= 0).collect(Collectors.toList()));
