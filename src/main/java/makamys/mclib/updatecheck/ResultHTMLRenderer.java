@@ -5,12 +5,16 @@ import static makamys.mclib.updatecheck.UpdateCheckLib.LOGGER;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import makamys.mclib.updatecheck.UpdateCheckLib.UpdateCategory;
 import makamys.mclib.updatecheck.ResultHTMLRenderer;
@@ -84,15 +88,31 @@ public class ResultHTMLRenderer {
                 String tableTitle = cat.displayName;
                 String rows = "";
                 for(UpdateCheckTask.Result result : interestingResults) {
-                    String newVersionStr = result.newVersion != null ? result.newVersion.toString() : "<b>ERROR</b>";
-                    String homepagesStr = String.join(TABLE_HOMEPAGE_SEPARATOR, result.task.homepages.stream().map(hp -> String.format(TABLE_HOMEPAGE_TEMPLATE, hp.url, hp.display)).toArray(String[]::new));
-                    rows += String.format(TABLE_ROW_TEMPLATE, result.task.name, result.task.currentVersion, newVersionStr, homepagesStr);
+                    String newVersionStr = result.newVersion != null ? htmlEscape(result.newVersion.toString()) : "<b>ERROR</b>";
+                    String homepagesStr = String.join(TABLE_HOMEPAGE_SEPARATOR, result.task.homepages.stream().map(hp -> String.format(TABLE_HOMEPAGE_TEMPLATE, urlEscape(hp.url), htmlEscape(hp.display))).toArray(String[]::new));
+                    rows += String.format(TABLE_ROW_TEMPLATE, htmlEscape(result.task.name), htmlEscape(result.task.currentVersion.toString()), newVersionStr, homepagesStr);
                 }
                 
-                tables.append(String.format(TABLE_TEMPLATE, String.format(TABLE_TITLE_TEMPLATE, tableTitle), FIELD_NAME, FIELD_CURRENT_VERSION, FIELD_NEW_VERSION, FIELD_URL, rows));
+                tables.append(String.format(TABLE_TEMPLATE, String.format(TABLE_TITLE_TEMPLATE, htmlEscape(tableTitle)), FIELD_NAME, FIELD_CURRENT_VERSION, FIELD_NEW_VERSION, FIELD_URL, rows));
             }
         });
         return tables.toString();
+    }
+
+    private static String htmlEscape(String str) {
+        return StringEscapeUtils.escapeHtml4(str);
+    }
+    
+    private static String urlEscape(String str) {
+        try {
+            // I don't know the proper way to do this, hopefully this is good enough!
+            String encoded = URLEncoder.encode(str, StandardCharsets.UTF_8.toString())
+                .replaceAll("%3A", ":")
+                .replaceAll("%2F", "/");
+            return encoded;
+        } catch (UnsupportedEncodingException e) {
+            return "ERROR";
+        }
     }
     
 }
