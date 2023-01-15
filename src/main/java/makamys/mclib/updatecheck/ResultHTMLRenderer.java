@@ -39,7 +39,7 @@ public class ResultHTMLRenderer {
             + "		<td>%s</td>\n"
             + "		<td>%s</td>\n"
             + "		<td>%s</td>\n"
-            + "	</tr>";
+            + "	</tr>\n";
     
     private static final String TABLE_HOMEPAGE_TEMPLATE = "<a href=\"%s\">%s</a>";
     private static final String TABLE_HOMEPAGE_SEPARATOR = " | ";
