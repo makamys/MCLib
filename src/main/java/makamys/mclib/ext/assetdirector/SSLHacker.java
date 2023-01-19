@@ -25,6 +25,8 @@ public class SSLHacker {
 
     private static final String TARGET_JAVA_VERSION = "1.8.0_51";
     private static final List<String> TRUSTED_HOSTS = Arrays.asList("minecraft.net", "mojang.com");
+    
+    private static boolean isEnabled;
 
     public static void hack() {
         if(System.getProperty("java.version").equals(TARGET_JAVA_VERSION)) {
@@ -79,7 +81,7 @@ public class SSLHacker {
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
             SocketAddress sa = socket.getRemoteSocketAddress();
-            if(sa instanceof InetSocketAddress) {
+            if(isEnabled && sa instanceof InetSocketAddress) {
                 String fullHost = ((InetSocketAddress)sa).getHostName();
                 int lastDot = fullHost.lastIndexOf(".");
                 int secondLastDot = fullHost.lastIndexOf(".", lastDot - 1);
@@ -117,5 +119,13 @@ public class SSLHacker {
         public X509Certificate[] getAcceptedIssuers() {
             return original.getAcceptedIssuers();
         }
+    }
+
+    public static void enable() {
+        isEnabled = true;
+    }
+    
+    public static void disable() {
+        isEnabled = false;
     }
 }

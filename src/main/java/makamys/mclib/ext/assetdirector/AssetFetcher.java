@@ -173,10 +173,13 @@ public class AssetFetcher {
         try {
             URL url = new URL(source);
             LOGGER.trace("Downloading " + url + " to " + destination);
+            SSLHacker.enable();
             FileUtils.copyURLToFile(url, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
         } catch(IOException e) {
             LOGGER.error("Failed to download " + source + " to " + destination);
             throw e;
+        } finally {
+            SSLHacker.disable();
         }
     }
     
@@ -184,10 +187,13 @@ public class AssetFetcher {
         try {
             URL url = new URL(urlStr);
             LOGGER.trace("Downloading JSON at " + url);
+            SSLHacker.enable();
             return loadJson(url.openStream(), classOfT);
         } catch(Exception e) {
             LOGGER.error("Failed to download JSON at " + urlStr);
             throw e;
+        } finally {
+            SSLHacker.disable();
         }
     }
     
