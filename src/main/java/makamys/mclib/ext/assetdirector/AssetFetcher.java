@@ -63,6 +63,8 @@ public class AssetFetcher {
         
         // clean up incomplete downloads
         Arrays.stream(adDir.listFiles((dir, name) -> name.endsWith(".part"))).forEach(f -> f.delete());
+        
+        SSLHacker.hack();
     }
 
     public void fetchAsset(String version, String asset) throws Exception {
