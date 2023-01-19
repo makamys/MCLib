@@ -46,8 +46,6 @@ public class AssetFetcher {
     private Map<String, File> fileMap = new HashMap<>();
     private static final File NULL_FILE = new File("");
     
-    private URLMassager urlMassager = new URLMassager();
-    
     public File assetsDir, adDir;
     
     public AssetFetcher(File assetsDir, File adDir) {
@@ -173,7 +171,7 @@ public class AssetFetcher {
     
     private void copyURLToFile(String source, File destination) throws IOException {
         try {
-            URL url = urlMassager.toURL(source);
+            URL url = new URL(source);
             LOGGER.trace("Downloading " + url + " to " + destination);
             FileUtils.copyURLToFile(url, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
         } catch(IOException e) {
@@ -184,7 +182,7 @@ public class AssetFetcher {
     
     private <T> T downloadJson(String urlStr, Class<T> classOfT) throws Exception {
         try {
-            URL url = urlMassager.toURL(urlStr);
+            URL url = new URL(urlStr);
             LOGGER.trace("Downloading JSON at " + url);
             return loadJson(url.openStream(), classOfT);
         } catch(Exception e) {
