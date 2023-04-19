@@ -6,6 +6,7 @@ import cpw.mods.fml.common.ProgressManager;
 import cpw.mods.fml.common.versioning.ComparableVersion;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import net.minecraft.client.Minecraft;
+import net.minecraft.launchwrapper.Launch;
 
 /** Provides abstractions to avoid direct references to Minecraft in AssetDirector's code. */
 public class MCUtil {
@@ -44,6 +45,10 @@ public class MCUtil {
         public int compareTo(Version other) {
             return internal.compareTo(other.internal);
         }
+    }
+
+    public static File getInstanceDir() {
+        return Launch.minecraftHome;
     }
     
 }
