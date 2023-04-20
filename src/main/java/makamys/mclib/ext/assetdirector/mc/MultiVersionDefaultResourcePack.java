@@ -1,6 +1,8 @@
 package makamys.mclib.ext.assetdirector.mc;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,6 +15,7 @@ import java.util.stream.StreamSupport;
 import org.apache.commons.io.IOUtils;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -35,6 +38,8 @@ import net.minecraft.util.ResourceLocation;
 import static makamys.mclib.ext.assetdirector.AssetDirector.SOUNDS_JSON_REQUESTED;
 
 public class MultiVersionDefaultResourcePack implements IResourcePack {
+    
+    private static final boolean DUMP_SOUNDS_JSON = Boolean.parseBoolean(System.getProperty("assetDirector.dumpSoundsJson", "false"));
     
     private static final Version v1_7_10 = new Version("1.7.10");
     private static final Version v1_13 = new Version("1.13");
@@ -72,6 +77,9 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
             JsonObject obj = assetDirector.getMassagedSoundJson(scratch.version);
             if(obj != null) {
                 stripUnusedSounds(obj, fetcher.assetIndexes.get(scratch.version));
+                if(DUMP_SOUNDS_JSON) {
+                    dumpSoundsJson(obj, scratch.version);
+                }
                 return IOUtils.toInputStream(new Gson().toJson(obj));
             }
         }
@@ -168,6 +176,16 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
                     .map(e -> e.getAsString()).collect(Collectors.toSet());
             soundsJSON.remove(SOUNDS_JSON_REQUESTED);
             soundsJSON.entrySet().removeIf(sound -> !requested.contains(sound.getKey()));
+        }
+    }
+    
+    private static void dumpSoundsJson(JsonObject json, String version) {
+        File outFile = new File(MCUtil.getInstanceDir(), "asset_director/out/sounds-" + version + ".json");
+        outFile.getParentFile().mkdirs();
+        try(FileWriter fw = new FileWriter(outFile)) {
+            new GsonBuilder().setPrettyPrinting().create().toJson(json, fw);
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
     

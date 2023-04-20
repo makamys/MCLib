@@ -2,7 +2,6 @@ package makamys.mclib.ext.assetdirector;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -17,7 +16,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -32,8 +30,6 @@ import makamys.mclib.ext.assetdirector.mc.MultiVersionDefaultResourcePack;
 
 /** Responsible for the high level logic of fetching assets. */
 public class AssetDirector {
-    
-    private static final boolean DUMP_SOUNDS_JSON = Boolean.parseBoolean(System.getProperty("assetDirector.dumpSoundsJson", "false"));
     
     static final Logger LOGGER = LogManager.getLogger("AssetDirector");
     static final String NS = "AssetDirector";
@@ -67,9 +63,6 @@ public class AssetDirector {
             if(entryObj.soundEvents != null) {
                 JsonObject soundJson = getOrFetchSoundJson(version);
                 objects.addAll(getObjectsAndSetCategories(entryObj.soundEvents, soundJson, modid));
-                if(DUMP_SOUNDS_JSON) {
-                    dumpSoundsJson(soundJson, version);
-                }
             }
             
             if(entryObj.jar) {
@@ -160,16 +153,6 @@ public class AssetDirector {
     
     public JsonObject getMassagedSoundJson(String version) {
         return soundJsons.get(fetcher.versionToAssetsId(version));    
-    }
-    
-    private static void dumpSoundsJson(JsonObject json, String version) {
-        File outFile = new File(MCUtil.getInstanceDir(), "asset_director/out/sounds-" + version + ".json");
-        outFile.getParentFile().mkdirs();
-        try(FileWriter fw = new FileWriter(outFile)) {
-            new GsonBuilder().setPrettyPrinting().create().toJson(json, fw);
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
     }
     
     public AssetFetcher getFetcher() {
