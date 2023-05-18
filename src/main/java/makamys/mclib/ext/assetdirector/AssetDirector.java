@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,7 @@ public class AssetDirector {
             fetcher.loadVersionDeps(version);
             
             VersionAssets entryObj = entry.getValue();
-            List<String> objects = entryObj.objects != null ? entryObj.objects : new ArrayList<>();
+            Collection<String> objects = entryObj.objects != null ? entryObj.objects : new ArrayList<>();
             
             if(entryObj.soundEvents != null) {
                 JsonObject soundJson = getOrFetchSoundJson(version);
@@ -99,7 +100,7 @@ public class AssetDirector {
         }
     }
     
-    private List<String> getObjectsAndSetCategories(List<SoundEvent> soundEvents, JsonObject soundJson, String modid) {
+    private List<String> getObjectsAndSetCategories(Collection<SoundEvent> soundEvents, JsonObject soundJson, String modid) {
         List<String> objects = new ArrayList<>();
         JsonArray requested = null;
         if(!soundJson.has(SOUNDS_JSON_REQUESTED)) {

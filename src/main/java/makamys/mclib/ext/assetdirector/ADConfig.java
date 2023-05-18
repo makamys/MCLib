@@ -1,10 +1,12 @@
 package makamys.mclib.ext.assetdirector;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import makamys.mclib.ext.assetdirector.ADConfig.VersionAssets.SoundEvent;
 
 public class ADConfig {
@@ -36,18 +38,15 @@ public class ADConfig {
     }
     
     public static class VersionAssets {
-        List<String> objects = new ArrayList<>();
-        List<SoundEvent> soundEvents = new ArrayList<>();
+        Collection<String> objects = new HashSet<>();
+        Collection<SoundEvent> soundEvents = new HashSet<>();
         boolean jar;
         
+        @Data
+        @AllArgsConstructor
         public static class SoundEvent {
             public String name;
             public String category;
-            
-            public SoundEvent(String name, String category) {
-                this.name = name;
-                this.category = category;
-            }
         }
     }
     
