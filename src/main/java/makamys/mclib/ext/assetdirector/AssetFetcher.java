@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.FileUtils;
 
 import com.google.common.hash.Hashing;
@@ -67,11 +69,13 @@ public class AssetFetcher {
 
     public void fetchAsset(String version, String asset) throws Exception {
         loadVersionDeps(version);
-        VersionIndex vi = versionIndexes.get(version);
-        AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
-        String hash = assetIndex.nameToHash.get(asset);
-        if(hash != null) {
-            downloadAsset(hash);
+        String hash = getAssetHash(version, asset);
+        fetchAssetByHash(hash);
+    }
+    
+    public void fetchAssetByHash(String assetHash) throws Exception {
+        if(assetHash != null) {
+            downloadAssetByHash(assetHash);
         }
     }
     
@@ -80,15 +84,31 @@ public class AssetFetcher {
     }
     
     public boolean needsFetchAsset(String version, String asset, boolean printErrors) {
+        String hash = getAssetHash(version, asset, printErrors);
+        return needsFetchAssetByHash(hash);
+    }
+    
+    public boolean needsFetchAssetByHash(String assetHash) {
+        if(assetHash != null) {
+            return !fileIsPresent(assetHash);
+        }
+        return false;
+    }
+    
+    @Nullable
+    public String getAssetHash(String version, String asset) {
+        return getAssetHash(version, asset, false);
+    }
+    
+    @Nullable
+    public String getAssetHash(String version, String asset, boolean printErrors) {
         VersionIndex vi = versionIndexes.get(version);
         AssetIndex assetIndex = assetIndexes.get(vi.assetsId);
         String hash = assetIndex.nameToHash.get(asset);
-        if(hash != null) {
-            return !fileIsPresent(hash);
-        } else if(printErrors) {
+        if(hash == null && printErrors) {
             LOGGER.error("Couldn't find asset " + asset + " inside " + version + " asset index");
         }
-        return false;
+        return hash;
     }
     
     public boolean fileIsPresent(String hash) {
@@ -101,7 +121,7 @@ public class AssetFetcher {
         }
     }
     
-    private void downloadAsset(String hash) throws IOException {
+    private void downloadAssetByHash(String hash) throws IOException {
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
         File outFile = getAssetFileForWrite(hash);
         File outFileTmp = new File(adDir, outFile.getName() + ".part");

@@ -52,7 +52,8 @@ public class AssetDirector {
     private void parseJson(String json, String modid) throws Exception {
         ADConfig config = new Gson().fromJson(json, ADConfig.class);
         
-        Map<String, Set<String>> objectFetchQueue = new HashMap<>();
+        Set<String> objectFetchQueue = new HashSet<>();
+        Map<String, String> objectName = new HashMap<>(); // For informational purposes
         Set<String> jarLoadQueue = new HashSet<>();
         Set<String> jarFetchQueue;
         
@@ -72,11 +73,18 @@ public class AssetDirector {
             	jarLoadQueue.add(version);
             }
             
-            objectFetchQueue.put(version, objects.stream().filter(o -> fetcher.needsFetchAsset(version, o, true)).distinct().collect(Collectors.toSet()));
+            for(String name : objects) {
+                String hash = fetcher.getAssetHash(version, name, true);
+                if(hash != null) {
+                    objectFetchQueue.add(hash);
+                    objectName.put(hash, name);
+                }
+            }
         }
         
-        jarFetchQueue = jarLoadQueue.stream().filter(v -> fetcher.needsFetchJar(v)).collect(Collectors.toSet());
-        int downloadCount = jarFetchQueue.size() + objectFetchQueue.values().stream().mapToInt(q -> q.size()).sum();
+        objectFetchQueue = objectFetchQueue.stream().filter(fetcher::needsFetchAssetByHash).collect(Collectors.toSet());
+        jarFetchQueue = jarLoadQueue.stream().filter(fetcher::needsFetchJar).collect(Collectors.toSet());
+        int downloadCount = jarFetchQueue.size() + objectFetchQueue.size();
         
         if(downloadCount > 0) {
             LOGGER.info("Downloading resources, this may take a while...");
@@ -87,11 +95,10 @@ public class AssetDirector {
                 fetcher.fetchJar(version);
             }
         	
-            for(Entry<String, Set<String>> versionAndAssets : objectFetchQueue.entrySet()) {
-                for(String asset : versionAndAssets.getValue()) {
-                    downloadBar.step(asset.replaceFirst("minecraft/", "").replaceFirst("sounds/", ""));
-                    fetcher.fetchAsset(versionAndAssets.getKey(), asset);
-                }
+            for(String assetHash : objectFetchQueue) {
+                String name = objectName.get(assetHash);
+                downloadBar.step(name.replaceFirst("minecraft/", "").replaceFirst("sounds/", ""));
+                fetcher.fetchAssetByHash(assetHash);
             }
 
             downloadBar.pop();
