@@ -61,7 +61,7 @@ public class AssetDirector {
             fetcher.loadVersionDeps(version);
             
             VersionAssets entryObj = entry.getValue();
-            Collection<String> objects = entryObj.objects != null ? entryObj.objects : new ArrayList<>();
+            Set<String> objects = entryObj.objects != null ? entryObj.objects : new HashSet<>();
             
             if(entryObj.soundEvents != null) {
                 JsonObject soundJson = getOrFetchSoundJson(version);

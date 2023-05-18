@@ -1,9 +1,9 @@
 package makamys.mclib.ext.assetdirector;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -38,8 +38,8 @@ public class ADConfig {
     }
     
     public static class VersionAssets {
-        Collection<String> objects = new HashSet<>();
-        Collection<SoundEvent> soundEvents = new HashSet<>();
+        Set<String> objects = new HashSet<>();
+        Set<SoundEvent> soundEvents = new HashSet<>();
         boolean jar;
         
         @Data
