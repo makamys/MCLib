@@ -8,9 +8,11 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -50,9 +52,9 @@ public class AssetDirector {
     private void parseJson(String json, String modid) throws Exception {
         ADConfig config = new Gson().fromJson(json, ADConfig.class);
         
-        Map<String, List<String>> objectFetchQueue = new HashMap<>();
-        List<String> jarLoadQueue = new ArrayList<>();
-        List<String> jarFetchQueue;
+        Map<String, Set<String>> objectFetchQueue = new HashMap<>();
+        Set<String> jarLoadQueue = new HashSet<>();
+        Set<String> jarFetchQueue;
         
         for(Entry<String, VersionAssets> entry : config.assets.entrySet()) {
             String version = entry.getKey();
@@ -70,10 +72,10 @@ public class AssetDirector {
             	jarLoadQueue.add(version);
             }
             
-            objectFetchQueue.put(version, objects.stream().filter(o -> fetcher.needsFetchAsset(version, o, true)).distinct().collect(Collectors.toList()));
+            objectFetchQueue.put(version, objects.stream().filter(o -> fetcher.needsFetchAsset(version, o, true)).distinct().collect(Collectors.toSet()));
         }
         
-        jarFetchQueue = jarLoadQueue.stream().filter(v -> fetcher.needsFetchJar(v)).collect(Collectors.toList());
+        jarFetchQueue = jarLoadQueue.stream().filter(v -> fetcher.needsFetchJar(v)).collect(Collectors.toSet());
         int downloadCount = jarFetchQueue.size() + objectFetchQueue.values().stream().mapToInt(q -> q.size()).sum();
         
         if(downloadCount > 0) {
@@ -85,7 +87,7 @@ public class AssetDirector {
                 fetcher.fetchJar(version);
             }
         	
-            for(Entry<String, List<String>> versionAndAssets : objectFetchQueue.entrySet()) {
+            for(Entry<String, Set<String>> versionAndAssets : objectFetchQueue.entrySet()) {
                 for(String asset : versionAndAssets.getValue()) {
                     downloadBar.step(asset.replaceFirst("minecraft/", "").replaceFirst("sounds/", ""));
                     fetcher.fetchAsset(versionAndAssets.getKey(), asset);
