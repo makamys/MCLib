@@ -8,6 +8,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -27,7 +29,7 @@ public class SSLHacker {
     private static final String TARGET_JAVA_VERSION = "1.8.0_51";
     private static final List<String> TRUSTED_HOSTS = Arrays.asList("minecraft.net", "mojang.com");
     
-    private static boolean isEnabled;
+    private static ThreadLocal<MutableBoolean> isEnabled = ThreadLocal.withInitial(MutableBoolean::new);
 
     public static void hack() {
         if(System.getProperty("java.version").equals(TARGET_JAVA_VERSION)) {
@@ -71,7 +73,7 @@ public class SSLHacker {
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
             SocketAddress sa = socket.getRemoteSocketAddress();
-            if(isEnabled && sa instanceof InetSocketAddress) {
+            if(isEnabled.get().booleanValue() && sa instanceof InetSocketAddress) {
                 String fullHost = ((InetSocketAddress)sa).getHostName();
                 int lastDot = fullHost.lastIndexOf(".");
                 int secondLastDot = fullHost.lastIndexOf(".", lastDot - 1);
@@ -112,10 +114,10 @@ public class SSLHacker {
     }
 
     public static void enable() {
-        isEnabled = true;
+        isEnabled.get().setTrue();
     }
     
     public static void disable() {
-        isEnabled = false;
+        isEnabled.get().setFalse();
     }
 }
