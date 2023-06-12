@@ -4,11 +4,11 @@ import static makamys.mclib.core.MCLib.LOGGER;
 
 import sun.security.ssl.SSLContextImpl;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
+
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -21,6 +21,7 @@ import java.util.List;
  * Hack Java's certificate handling to unconditionally accept Mojang's certificates.
  * Needed because java 1.8.0_51 doesn't support Mojang's new certificates, and many launchers bundle this version of Java.
  */
+@SuppressWarnings("restriction")
 public class SSLHacker {
 
     private static final String TARGET_JAVA_VERSION = "1.8.0_51";
@@ -42,27 +43,16 @@ public class SSLHacker {
     }
 
     private static void replaceTrustManager() throws Exception {
-        Field f = SSLContextImpl.DefaultSSLContext.class.getDeclaredField("defaultTrustManagers");
-        f.setAccessible(true);
-        TrustManager[] tms = (TrustManager[])f.get(null);
-        if(tms == null) {
-            Method m = SSLContextImpl.DefaultSSLContext.class.getDeclaredMethod("getDefaultTrustManager");
-            m.setAccessible(true);
-            m.invoke(null);
-        }
-        tms = (TrustManager[])f.get(null);
-        if(tms == null) {
-            throw new RuntimeException("defaultTrustManagers is null");
-        } else if(tms.length != 1) {
-            throw new RuntimeException("defaultTrustManagers contains more than 1 element");
-        } else {
-            TrustManager tm = tms[0];
-            if(tm instanceof X509ExtendedTrustManager) {
-                tms[0] = new HackedX509TrustManager((X509ExtendedTrustManager)tm);
-            } else {
-                throw new RuntimeException("defaultTrustManagers[0] is not an instance of X509ExtendedTrustManager");
-            }
-        }
+        SSLContext context = SSLContext.getDefault();
+        
+        Field contextSpiF = SSLContext.class.getDeclaredField("contextSpi");
+        contextSpiF.setAccessible(true);
+        SSLContextImpl contextImpl = (SSLContextImpl)contextSpiF.get(context);
+        Field tmF = SSLContextImpl.class.getDeclaredField("trustManager");
+        tmF.setAccessible(true);
+        X509ExtendedTrustManager tm = (X509ExtendedTrustManager)tmF.get(contextImpl);
+        
+        tmF.set(contextImpl, new HackedX509TrustManager(tm));
     }
 
     private static class HackedX509TrustManager extends X509ExtendedTrustManager {
