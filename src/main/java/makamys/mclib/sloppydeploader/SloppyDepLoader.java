@@ -470,6 +470,8 @@ public class SloppyDepLoader {
     }
 
     public void preInit() {
+        if(!isUsed()) return;
+        
         ConfigSDL.reload();
         if(ConfigSDL.enabled) {
             for(Entry<String, String> modDepEntry : SloppyDepLoaderAPI.modDeps.entrySet()) {
@@ -479,5 +481,9 @@ public class SloppyDepLoader {
                 inst.load();
             }
         }
+    }
+    
+    private boolean isUsed() {
+        return !SloppyDepLoaderAPI.modDeps.isEmpty();
     }
 }
