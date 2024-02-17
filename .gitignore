@@ -12,6 +12,7 @@ run/
 *.launch
 .settings
 .classpath
+.factorypath
 .project
 .metadata
 eclipse
