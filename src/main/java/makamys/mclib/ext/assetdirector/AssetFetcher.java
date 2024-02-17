@@ -250,6 +250,8 @@ public class AssetFetcher {
     }
     
     public boolean hashExists(String hash) {
+        if(hash == null) return false;
+        
         File file = fileMap.get(hash);
         return file != null && file != NULL_FILE;
     }

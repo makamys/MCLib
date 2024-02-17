@@ -61,6 +61,7 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     
     public InputStream getInputStream(ResourceLocation resLoc) throws IOException {
         parseName(resLoc);
+        if(!scratch.isValid) throw new IOException("Invalid resource location: " + resLoc);
         
         if(scratch.mcResPack != null) {
             // Get overridden by a user-added resource of the same name in the minecraft namespace
@@ -68,10 +69,12 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         }
         
         InputStream is = null;
-        if(!scratch.isInJar) {
+        if(scratch.isInJar) {
+            is = scratch.vi.getJarFileStream("assets/minecraft/" + scratch.name);
+        } else if(fetcher.hashExists(scratch.hash)) {
             is = fetcher.getAssetInputStream(scratch.hash);
         } else {
-            is = scratch.vi.getJarFileStream("assets/minecraft/" + scratch.name);
+            throw new IOException("Resource does not exist: " + resLoc);
         }
         if(scratch.namespace.equals("minecraft") && scratch.name.equals("sounds.json")) {
             JsonObject obj = assetDirector.getMassagedSoundJson(scratch.version);
@@ -87,15 +90,18 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     }
 
     public boolean resourceExists(ResourceLocation resLoc) {
-        if(!resLoc.getResourceDomain().startsWith("minecraft_")) return false;
-        
         parseName(resLoc);
         
-        return scratch.isInJar ? true : fetcher.hashExists(scratch.hash) || scratch.mcResPack != null;
+        return scratch.isValid && (scratch.isInJar ? true : fetcher.hashExists(scratch.hash) || scratch.mcResPack != null);
     }
     
     private void parseName(ResourceLocation resLoc){
         if(resLoc.equals(scratch.resLoc)) return;
+        
+        scratch.isValid = resLoc.getResourceDomain().startsWith("minecraft_");
+        if(!scratch.isValid) {
+            return;
+        }
         
         String fullDomain = resLoc.getResourceDomain();
         int firstUnderscore = fullDomain.indexOf('_');
@@ -190,6 +196,7 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     }
     
     private static class NameParserScratch {
+        boolean isValid;
         ResourceLocation resLoc;
         String namespace;
         String version;
