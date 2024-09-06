@@ -2,6 +2,7 @@ package makamys.mclib.ext.assetdirector;
 
 import static makamys.mclib.core.MCLib.LOGGER;
 
+import lombok.val;
 import makamys.mclib.core.MCLib;
 import org.apache.http.conn.ssl.SSLContexts;
 
@@ -23,17 +24,20 @@ import java.util.List;
 @SuppressWarnings("restriction")
 public class SSLHacker {
 
-    private static final String TARGET_JAVA_VERSION = "1.8.0_51";
-
     public static void hack() {
-        if(System.getProperty("java.version").equals(TARGET_JAVA_VERSION)) {
-            LOGGER.warn("Your Java version (" + TARGET_JAVA_VERSION + ") is out of date! Please consider updating to a newer version for improved stability and security.");
-            LOGGER.warn("AssetDirector will replace the SSL trust manager to apply a compatibility hack.");
-            try {
-                replaceSSLContext();
-            } catch(Exception e) {
-                LOGGER.error("Failed to replace SSL trust manager! Asset downloads may fail.");
-                e.printStackTrace();
+        String javaVersion = System.getProperty("java.version");
+        if (javaVersion.startsWith("1.8.0")) {
+            // check if patch < 75
+            String patchVersion = javaVersion.split("_")[1].split("-")[0];
+            if (Integer.parseInt(patchVersion) < 75) {
+                LOGGER.warn("Your Java version (" + javaVersion + ") is out of date! Please consider updating to a newer version for improved stability and security.");
+                LOGGER.warn("AssetDirector will replace the SSL trust manager to apply a compatibility hack.");
+                try {
+                    replaceSSLContext();
+                } catch (Exception e) {
+                    LOGGER.error("Failed to replace SSL trust manager! Asset downloads may fail.");
+                    e.printStackTrace();
+                }
             }
         }
     }
