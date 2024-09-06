@@ -2,20 +2,17 @@ package makamys.mclib.ext.assetdirector;
 
 import static makamys.mclib.core.MCLib.LOGGER;
 
-import sun.security.ssl.SSLContextImpl;
+import makamys.mclib.core.MCLib;
+import org.apache.http.conn.ssl.SSLContexts;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.X509ExtendedTrustManager;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
-import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,16 +24,13 @@ import java.util.List;
 public class SSLHacker {
 
     private static final String TARGET_JAVA_VERSION = "1.8.0_51";
-    private static final List<String> TRUSTED_HOSTS = Arrays.asList("minecraft.net", "mojang.com");
-    
-    private static ThreadLocal<MutableBoolean> isEnabled = ThreadLocal.withInitial(MutableBoolean::new);
 
     public static void hack() {
         if(System.getProperty("java.version").equals(TARGET_JAVA_VERSION)) {
             LOGGER.warn("Your Java version (" + TARGET_JAVA_VERSION + ") is out of date! Please consider updating to a newer version for improved stability and security.");
             LOGGER.warn("AssetDirector will replace the SSL trust manager to apply a compatibility hack.");
             try {
-                replaceTrustManager();
+                replaceSSLContext();
             } catch(Exception e) {
                 LOGGER.error("Failed to replace SSL trust manager! Asset downloads may fail.");
                 e.printStackTrace();
@@ -44,80 +38,24 @@ public class SSLHacker {
         }
     }
 
-    private static void replaceTrustManager() throws Exception {
-        SSLContext context = SSLContext.getDefault();
-        
-        Field contextSpiF = SSLContext.class.getDeclaredField("contextSpi");
-        contextSpiF.setAccessible(true);
-        SSLContextImpl contextImpl = (SSLContextImpl)contextSpiF.get(context);
-        Field tmF = SSLContextImpl.class.getDeclaredField("trustManager");
-        tmF.setAccessible(true);
-        X509ExtendedTrustManager tm = (X509ExtendedTrustManager)tmF.get(contextImpl);
-        
-        tmF.set(contextImpl, new HackedX509TrustManager(tm));
-    }
+    private static void replaceSSLContext() throws Exception {
+        final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        final KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(null, null);
 
-    private static class HackedX509TrustManager extends X509ExtendedTrustManager {
-
-        private X509ExtendedTrustManager original;
-
-        public HackedX509TrustManager(X509ExtendedTrustManager original) {
-            this.original = original;
+        // from https://www.digicert.com/kb/digicert-root-certificates.htm
+        try (InputStream is = SSLHacker.class.getClassLoader().getResourceAsStream("resources/mclib/" + MCLib.RESOURCES_VERSION + "/certs/DigiCertGlobalRootG3.crt.pem")) {
+            final Certificate cert = cf.generateCertificate(is);
+            keyStore.setCertificateEntry("digicertglobalrootg3", cert);
         }
+        // TODO: consider adding other root certs added in https://www.oracle.com/java/technologies/javase/8u75-relnotes.html
+        // and https://www.oracle.com/java/technologies/javase/8u101-relnotes.html (and probably some others)
 
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
-            original.checkClientTrusted(chain, authType, socket);
-        }
+        SSLContext fixed = SSLContexts.custom()
+            .loadTrustMaterial(null, null) // load default ssl
+            .loadTrustMaterial(keyStore, null) // load new certs
+            .build();
 
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
-            SocketAddress sa = socket.getRemoteSocketAddress();
-            if(isEnabled.get().booleanValue() && sa instanceof InetSocketAddress) {
-                String fullHost = ((InetSocketAddress)sa).getHostName();
-                int lastDot = fullHost.lastIndexOf(".");
-                int secondLastDot = fullHost.lastIndexOf(".", lastDot - 1);
-                
-                String host = secondLastDot == -1 ? fullHost : fullHost.substring(secondLastDot + 1);
-                
-                if(TRUSTED_HOSTS.contains(host)) {
-                    return;
-                }
-            }
-            original.checkServerTrusted(chain, authType, socket);
-        }
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
-            original.checkClientTrusted(chain, authType, engine);
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
-            original.checkServerTrusted(chain, authType, engine);
-        }
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            original.checkClientTrusted(chain, authType);
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-            original.checkServerTrusted(chain, authType);
-        }
-
-        @Override
-        public X509Certificate[] getAcceptedIssuers() {
-            return original.getAcceptedIssuers();
-        }
-    }
-
-    public static void enable() {
-        isEnabled.get().setTrue();
-    }
-    
-    public static void disable() {
-        isEnabled.get().setFalse();
+        SSLContext.setDefault(fixed);
     }
 }
