@@ -1,0 +1,13 @@
+// Add any additional repositories for your dependencies here.
+repositories {
+    mavenLocal()
+    maven {
+        name = "chickenbones"
+        url = uri("http://chickenbones.net/maven/")
+        allowInsecureProtocol = true
+    }
+    maven {
+        url = uri("https://jitpack.io")
+    }
+}
+
