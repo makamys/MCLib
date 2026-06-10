@@ -109,11 +109,22 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
         scratch.namespace = fullDomain.substring(0, firstUnderscore);
         scratch.version = fullDomain.substring(firstUnderscore + 1);
         scratch.vi = fetcher.versionIndexes.get(scratch.version);
+        if(scratch.vi == null) {
+            // Version index unavailable (e.g. its asset fetch failed). Treat the resource as
+            // absent and fall back to vanilla resolution instead of crashing the client.
+            scratch.isValid = false;
+            return;
+        }
         scratch.name = convertPath(resLoc.getResourcePath(), scratch.vi.version);
         if(scratch.vi.jarContainsFile("assets/minecraft/" + scratch.name)) {
             scratch.isInJar = true;
         } else {
             scratch.isInJar = false;
+            if(fetcher.assetIndexes.get(scratch.vi.assetsId) == null) {
+                // Asset index failed to load/parse; report the resource as absent.
+                scratch.isValid = false;
+                return;
+            }
             scratch.hash = fetcher.assetIndexes.get(scratch.vi.assetsId).nameToHash
                     .get(scratch.namespace + "/" + scratch.name);
         }
