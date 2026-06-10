@@ -146,20 +146,44 @@ public class AssetFetcher {
         
         // TODO redownload stuff if timestamp in manifest changes?
         File indexJson = new File(adDir, String.format(VERSION_INDEX_PATH, version, version));
-        if(!indexJson.exists()) {
-            downloadVersionIndex(version, indexJson);
-        }
-        VersionIndex vi = new VersionIndex(loadJson(indexJson, JsonObject.class));
+        VersionIndex vi = new VersionIndex(loadJsonOrRedownload(indexJson, JsonObject.class, f -> downloadVersionIndex(version, f)));
         versionIndexes.put(version, vi);
         
         if(!assetIndexes.containsKey(vi.assetsId)) {
             File assetIndex = new File(adDir, String.format(ASSET_INDEX_PATH, vi.assetsId));
-            if(!assetIndex.exists()) {
+            JsonObject assetIndexJson = loadJsonOrRedownload(assetIndex, JsonObject.class, f -> {
                 String url = vi.json.get("assetIndex").getAsJsonObject().get("url").getAsString();
-                copyURLToFile(url, assetIndex);
-            }
-            assetIndexes.put(vi.assetsId, new AssetIndex(loadJson(assetIndex, JsonObject.class)));
+                copyURLToFile(url, f);
+            });
+            assetIndexes.put(vi.assetsId, new AssetIndex(assetIndexJson));
         }
+    }
+    
+    /**
+     * Loads a cached JSON file, (re)downloading it if it is missing or fails to parse.
+     * A previously cached but corrupt/truncated file (e.g. from an interrupted download)
+     * is deleted and fetched again instead of being trusted indefinitely.
+     */
+    private <T> T loadJsonOrRedownload(File file, Class<T> classOfT, Downloader downloader) throws Exception {
+        Exception lastError = null;
+        for(int attempt = 0; attempt < DOWNLOAD_ATTEMPTS; attempt++) {
+            if(!file.exists()) {
+                downloader.download(file);
+            }
+            try {
+                return loadJson(file, classOfT);
+            } catch(Exception e) {
+                lastError = e;
+                LOGGER.warn("Cached file " + file + " is missing or corrupt (" + e + "); deleting and re-downloading. Attempt " + (attempt + 1) + "/" + DOWNLOAD_ATTEMPTS);
+                file.delete();
+            }
+        }
+        throw new IOException("Could not obtain a valid " + file + " after " + DOWNLOAD_ATTEMPTS + " attempts", lastError);
+    }
+    
+    @FunctionalInterface
+    private interface Downloader {
+        void download(File dest) throws Exception;
     }
     
     public void fetchJar(String version) throws IOException {
@@ -192,8 +216,12 @@ public class AssetFetcher {
     private void copyURLToFile(String source, File destination) throws IOException {
         try {
             URL url = new URL(source);
+            // Download to a temporary file and only move it into place once complete, so an
+            // interrupted download can never leave a truncated file at the real cache path.
+            File partFile = new File(destination.getPath() + ".part");
             LOGGER.trace("Downloading " + url + " to " + destination);
-            FileUtils.copyURLToFile(url, destination, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
+            FileUtils.copyURLToFile(url, partFile, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
+            Files.move(partFile, destination);
         } catch(IOException e) {
             LOGGER.error("Failed to download " + source + " to " + destination);
             throw e;
