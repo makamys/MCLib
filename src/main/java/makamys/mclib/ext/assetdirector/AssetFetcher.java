@@ -214,8 +214,9 @@ public class AssetFetcher {
     }
     
     private void copyURLToFile(String source, File destination) throws IOException {
+        String redirectedSource = AssetDownloadRedirector.redirect(source);
         try {
-            URL url = new URL(source);
+            URL url = new URL(redirectedSource);
             // Download to a temporary file and only move it into place once complete, so an
             // interrupted download can never leave a truncated file at the real cache path.
             File partFile = new File(destination.getPath() + ".part");
@@ -223,18 +224,19 @@ public class AssetFetcher {
             FileUtils.copyURLToFile(url, partFile, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
             Files.move(partFile, destination);
         } catch(IOException e) {
-            LOGGER.error("Failed to download " + source + " to " + destination);
+            LOGGER.error("Failed to download " + redirectedSource + " to " + destination);
             throw e;
         }
     }
     
     private <T> T downloadJson(String urlStr, Class<T> classOfT) throws Exception {
+        String redirectedUrl = AssetDownloadRedirector.redirect(urlStr);
         try {
-            URL url = new URL(urlStr);
+            URL url = new URL(redirectedUrl);
             LOGGER.trace("Downloading JSON at " + url);
             return loadJson(url.openStream(), classOfT);
         } catch(Exception e) {
-            LOGGER.error("Failed to download JSON at " + urlStr);
+            LOGGER.error("Failed to download JSON at " + redirectedUrl);
             throw e;
         }
     }
