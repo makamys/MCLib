@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.gson.Gson;
-
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.LoaderState;
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
@@ -15,48 +14,26 @@ import makamys.mclib.core.TaskQueue;
 import makamys.mclib.core.sharedstate.SharedReference;
 
 public class AssetDirectorAPI {
-
+    
     static Map<String, String> jsons = SharedReference.get(NS, "jsons", HashMap.class);
-
+    
     private static boolean active = FMLLaunchHandler.side() == Side.CLIENT;
-
-    /**
-     * Enqueues asset downloading for a mod, using the argument ADConfig object for configuration. Can be called anytime
-     * before pre-init.
+    
+    /** Enqueues asset downloading for a mod, using the argument ADConfig object for configuration. Can be called anytime before pre-init.
      */
     public static void register(ADConfig config) {
-        if (!active) return;
-
+        if(!active) return;
+        
         // We convert configs to JSON strings to remove class identity
-        jsons.put(
-            Loader.instance()
-                .activeModContainer()
-                .getModId(),
-            new Gson().toJson(config));
+        jsons.put(Loader.instance().activeModContainer().getModId(), new Gson().toJson(config));
     }
-
-    /** Sets a custom base URL for supported Minecraft downloads. Call before pre-init to affect queued downloads. */
-    public static void setDownloadRedirectBaseUrl(String baseUrl) {
-        AssetDownloadRedirector.setRedirectBaseUrl(baseUrl);
-    }
-
-    /** Returns the currently configured Minecraft download redirect base URL, or an empty string when disabled. */
-    public static String getDownloadRedirectBaseUrl() {
-        return AssetDownloadRedirector.getRedirectBaseUrl();
-    }
-
-    /** Clears the custom Minecraft download redirect base URL and restores Mojang download URLs. */
-    public static void clearDownloadRedirectBaseUrl() {
-        AssetDownloadRedirector.clearRedirectBaseUrl();
-    }
-
+    
     static {
-        if (active) {
-            TaskQueue.enqueueTask(
-                LoaderState.PREINITIALIZATION,
-                "AssetDirectorPreinit",
-                () -> { AssetDirector.instance.preInit(); });
+        if(active) {
+            TaskQueue.enqueueTask(LoaderState.PREINITIALIZATION, "AssetDirectorPreinit", () -> {
+                AssetDirector.instance.preInit();
+            });
         }
     }
-
+    
 }

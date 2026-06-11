@@ -1,14 +1,18 @@
 /*
  * The MIT License (MIT)
+ * 
  * Copyright (c) 2014 ChickenBones
+ * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
+ * 
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -16,42 +20,10 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ * 
  */
 
 package makamys.mclib.sloppydeploader;
-
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.net.URLConnection;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
-import net.minecraft.client.gui.GuiMainMenu;
-import net.minecraft.launchwrapper.LaunchClassLoader;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.common.MinecraftForge;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.common.eventbus.Subscribe;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -60,25 +32,45 @@ import cpw.mods.fml.relauncher.FMLInjectionData;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import makamys.mclib.core.MCLib;
+import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.launchwrapper.LaunchClassLoader;
+import net.minecraftforge.client.event.GuiOpenEvent;
+import net.minecraftforge.common.MinecraftForge;
+import sun.misc.URLClassPath;
+import sun.net.util.URLUtil;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.net.URLConnection;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.google.common.eventbus.Subscribe;
 
 /**
- * For autodownloading optional dependencies. Unlike CCC's DepLoader, this one does not exit the game if a dependency
- * fails to be loaded.
- * This is really unoriginal, mostly ripped off CodeChickenCore, where it was mostly ripped off FML, credits to
- * ChickenBones and cpw.
+ * For autodownloading optional dependencies. Unlike CCC's DepLoader, this one does not exit the game if a dependency fails to be loaded.
+ * This is really unoriginal, mostly ripped off CodeChickenCore, where it was mostly ripped off FML, credits to ChickenBones and cpw.
  */
 public class SloppyDepLoader {
-
     private static ByteBuffer downloadBuffer = ByteBuffer.allocateDirect(1 << 23);
     private static final String owner = "Sloppy DepLoader";
     private static DepLoadInst inst;
     public static final String NS = "SloppyDepLoader";
     private static final Logger LOGGER = LogManager.getLogger(NS);
-
+    
     private static Map<String, String> modDeps = new HashMap<>();
 
     public interface IDownloadDisplay {
-
         void resetProgress(int sizeGuess);
 
         void setPokeThread(Thread currentThread);
@@ -95,15 +87,17 @@ public class SloppyDepLoader {
     }
 
     public static class DummyDownloader implements IDownloadDisplay {
+        @Override
+        public void resetProgress(int sizeGuess) {
+        }
 
         @Override
-        public void resetProgress(int sizeGuess) {}
+        public void setPokeThread(Thread currentThread) {
+        }
 
         @Override
-        public void setPokeThread(Thread currentThread) {}
-
-        @Override
-        public void updateProgress(int fullLength) {}
+        public void updateProgress(int fullLength) {
+        }
 
         @Override
         public boolean shouldStopIt() {
@@ -111,7 +105,8 @@ public class SloppyDepLoader {
         }
 
         @Override
-        public void updateProgressString(String string, Object... data) {}
+        public void updateProgressString(String string, Object... data) {
+        }
 
         @Override
         public Object makeDialog() {
@@ -119,11 +114,12 @@ public class SloppyDepLoader {
         }
 
         @Override
-        public void showErrorDialog(String name, String url) {}
+        public void showErrorDialog(String name, String url) {
+        }
     }
 
-    public static class VersionedFile {
-
+    public static class VersionedFile
+    {
         public final Pattern pattern;
         public final String filename;
         public final ComparableVersion version;
@@ -133,10 +129,11 @@ public class SloppyDepLoader {
             this.pattern = pattern;
             this.filename = filename;
             Matcher m = pattern.matcher(filename);
-            if (m.matches()) {
+            if(m.matches()) {
                 name = m.group(1);
                 version = new ComparableVersion(m.group(2));
-            } else {
+            }
+            else {
                 name = null;
                 version = null;
             }
@@ -147,8 +144,8 @@ public class SloppyDepLoader {
         }
     }
 
-    public static class Dependency {
-
+    public static class Dependency
+    {
         public String url;
         public VersionedFile file;
 
@@ -164,7 +161,7 @@ public class SloppyDepLoader {
             this.file = file;
             this.coreLib = coreLib;
         }
-
+        
         @Override
         public String toString() {
             return "Dependency{" + file.name + " @ " + url + "}";
@@ -172,7 +169,6 @@ public class SloppyDepLoader {
     }
 
     public static class DepLoadInst {
-
         private File modsDir;
         private File v_modsDir;
         private IDownloadDisplay downloadMonitor;
@@ -182,34 +178,33 @@ public class SloppyDepLoader {
 
         private boolean showedRestartNotification;
         private SloppyDepDownloadManager downloadManager = new SloppyDepDownloadManager();
-
+        
         public DepLoadInst() {
             String mcVer = (String) FMLInjectionData.data()[4];
             File mcDir = (File) FMLInjectionData.data()[6];
 
             modsDir = new File(mcDir, "mods");
             v_modsDir = new File(mcDir, "mods/" + mcVer);
-            if (!v_modsDir.exists()) v_modsDir.mkdirs();
-
+            if (!v_modsDir.exists())
+                v_modsDir.mkdirs();
+            
             MCLib.FML_MASTER.register(this);
         }
-
+        
         @Subscribe
         public void onInit(FMLInitializationEvent event) {
             // we have to wait until preinit phase has started proper to register objects on the mod event bus
             MinecraftForge.EVENT_BUS.register(this);
         }
-
+        
         @SubscribeEvent
         @SideOnly(Side.CLIENT)
         public void onGui(GuiOpenEvent event) {
-            if (event.gui instanceof GuiMainMenu) {
-                if (downloadManager.allDone()) {
-                    if (inst != null && !showedRestartNotification
-                        && !downloadManager.getDownloadedList()
-                            .isEmpty()) {
+            if(event.gui instanceof GuiMainMenu) {
+                if(downloadManager.allDone()) {
+                    if(inst != null && !showedRestartNotification && !downloadManager.getDownloadedList().isEmpty()) {
                         ConfigSDL.reload();
-                        if (ConfigSDL.showRestartNotification) {
+                        if(ConfigSDL.showRestartNotification) {
                             event.gui = new GuiRestartNotification(event.gui, downloadManager.getDownloadedList());
                             showedRestartNotification = true;
                         }
@@ -220,24 +215,21 @@ public class SloppyDepLoader {
         }
 
         private void deleteMod(File mod) {
-            if (mod.delete()) return;
+            if (mod.delete())
+                return;
 
             try {
                 ClassLoader cl = SloppyDepLoader.class.getClassLoader();
-                URL url = mod.toURI()
-                    .toURL();
+                URL url = mod.toURI().toURL();
                 Field f_ucp = URLClassLoader.class.getDeclaredField("ucp");
+                Field f_loaders = URLClassPath.class.getDeclaredField("loaders");
+                Field f_lmap = URLClassPath.class.getDeclaredField("lmap");
                 f_ucp.setAccessible(true);
-
-                Object ucp = f_ucp.get(cl);
-                Field f_loaders = ucp.getClass()
-                    .getDeclaredField("loaders");
-                Field f_lmap = ucp.getClass()
-                    .getDeclaredField("lmap");
                 f_loaders.setAccessible(true);
                 f_lmap.setAccessible(true);
 
-                Closeable loader = ((Map<String, Closeable>) f_lmap.get(ucp)).remove(urlNoFragmentString(url));
+                URLClassPath ucp = (URLClassPath) f_ucp.get(cl);
+                Closeable loader = ((Map<String, Closeable>) f_lmap.get(ucp)).remove(URLUtil.urlNoFragString(url));
                 if (loader != null) {
                     loader.close();
                     ((List<?>) f_loaders.get(ucp)).remove(loader);
@@ -248,17 +240,9 @@ public class SloppyDepLoader {
 
             if (!mod.delete()) {
                 mod.deleteOnExit();
-                String msg = owner + " was unable to delete file "
-                    + mod.getPath()
-                    + " the game will try to delete it on exit. If this message appears again, delete it manually.";
+                String msg = owner + " was unable to delete file " + mod.getPath() + " the game will try to delete it on exit. If this message appears again, delete it manually.";
                 LOGGER.error(msg);
             }
-        }
-
-        private String urlNoFragmentString(URL url) {
-            String externalForm = url.toExternalForm();
-            int fragmentStart = externalForm.indexOf('#');
-            return fragmentStart >= 0 ? externalForm.substring(0, fragmentStart) : externalForm;
         }
 
         private void download(Dependency dep) {
@@ -275,28 +259,19 @@ public class SloppyDepLoader {
                 download(connection.getInputStream(), sizeGuess, libFile);
                 downloadMonitor.updateProgressString("Download complete");
                 LOGGER.info("Download complete");
-                // globalDownloadedDeps.add(dep.file.filename);
+                //globalDownloadedDeps.add(dep.file.filename);
                 dep.downloaded = true;
             } catch (Exception e) {
                 libFile.delete();
-                LOGGER.error(
-                    "A download error occured downloading " + dep.file.filename
-                        + " from "
-                        + dep.url
-                        + '/'
-                        + dep.file.filename
-                        + ": "
-                        + e.getMessage());
-                // downloadMonitor.showErrorDialog(dep.file.filename, dep.url + '/' + dep.file.filename);
-                // throw new RuntimeException("A download error occured", e);
+                LOGGER.error("A download error occured downloading " + dep.file.filename + " from " + dep.url + '/' + dep.file.filename + ": " + e.getMessage());
+                //downloadMonitor.showErrorDialog(dep.file.filename, dep.url + '/' + dep.file.filename);
+                //throw new RuntimeException("A download error occured", e);
             }
         }
 
         private void download(InputStream is, int sizeGuess, File target) throws Exception {
-            if (sizeGuess > downloadBuffer.capacity()) throw new Exception(
-                String.format(
-                    "The file %s is too large to be downloaded by " + owner + " - the download is invalid",
-                    target.getName()));
+            if (sizeGuess > downloadBuffer.capacity())
+                throw new Exception(String.format("The file %s is too large to be downloaded by " + owner + " - the download is invalid", target.getName()));
 
             downloadBuffer.clear();
 
@@ -327,27 +302,22 @@ public class SloppyDepLoader {
             }
 
             try {
-                /*
-                 * String cksum = generateChecksum(downloadBuffer);
-                 * if (cksum.equals(validationHash))
-                 * {
-                 */
-                if (!target.exists()) target.createNewFile();
+                /*String cksum = generateChecksum(downloadBuffer);
+                if (cksum.equals(validationHash))
+                {*/
+                if (!target.exists())
+                    target.createNewFile();
+
 
                 downloadBuffer.position(0);
                 FileOutputStream fos = new FileOutputStream(target);
-                fos.getChannel()
-                    .write(downloadBuffer);
+                fos.getChannel().write(downloadBuffer);
                 fos.close();
-                /*
-                 * }
-                 * else
-                 * {
-                 * throw new RuntimeException(String.
-                 * format("The downloaded file %s has an invalid checksum %s (expecting %s). The download did not succeed correctly and the file has been deleted. Please try launching again."
-                 * , target.getName(), cksum, validationHash));
-                 * }
-                 */
+                /*}
+                else
+                {
+                    throw new RuntimeException(String.format("The downloaded file %s has an invalid checksum %s (expecting %s). The download did not succeed correctly and the file has been deleted. Please try launching again.", target.getName(), cksum, validationHash));
+                }*/
             } catch (Exception e) {
                 throw e;
             }
@@ -356,16 +326,19 @@ public class SloppyDepLoader {
         private String checkExisting(Dependency dep) {
             for (File f : modsDir.listFiles()) {
                 VersionedFile vfile = new VersionedFile(f.getName(), dep.file.pattern);
-                if (!vfile.matches() || !vfile.name.equals(dep.file.name)) continue;
+                if (!vfile.matches() || !vfile.name.equals(dep.file.name))
+                    continue;
 
-                if (f.renameTo(new File(v_modsDir, f.getName()))) continue;
+                if (f.renameTo(new File(v_modsDir, f.getName())))
+                    continue;
 
                 deleteMod(f);
             }
 
             for (File f : v_modsDir.listFiles()) {
                 VersionedFile vfile = new VersionedFile(f.getName(), dep.file.pattern);
-                if (!vfile.matches() || !vfile.name.equals(dep.file.name)) continue;
+                if (!vfile.matches() || !vfile.name.equals(dep.file.name))
+                    continue;
 
                 int cmp = vfile.version.compareTo(dep.file.version);
                 if (cmp < 0) {
@@ -374,24 +347,20 @@ public class SloppyDepLoader {
                     return null;
                 }
                 if (cmp > 0) {
-                    LOGGER.warn(
-                        "Warning: version of " + dep.file.name
-                            + ", "
-                            + vfile.version
-                            + " is newer than request "
-                            + dep.file.version);
+                    LOGGER.warn("Warning: version of " + dep.file.name + ", " + vfile.version + " is newer than request " + dep.file.version);
                     return f.getName();
                 }
-                return f.getName();// found dependency
+                return f.getName();//found dependency
             }
             return null;
         }
 
         public void load() {
-            if (depMap.isEmpty()) return;
-
+            if (depMap.isEmpty())
+                return;
+            
             LOGGER.debug("Loading with depMap " + depMap);
-
+            
             loadDeps();
         }
 
@@ -404,14 +373,14 @@ public class SloppyDepLoader {
                 loadAsync(dep);
             }
         }
-
+        
         private void loadAsync(Dependency dep) {
             downloadManager.enqueueDownload(new SloppyDepDownloadTask(dep));
         }
 
         private void load(Dependency dep) {
             dep.existing = checkExisting(dep);
-            if (dep.existing == null)// download dep
+            if (dep.existing == null)//download dep
             {
                 download(dep);
                 dep.existing = dep.file.filename;
@@ -420,7 +389,7 @@ public class SloppyDepLoader {
 
         public void addSloppyDep(SloppyDependency dep) throws IOException {
             boolean obfuscated = ((LaunchClassLoader) SloppyDepLoader.class.getClassLoader())
-                .getClassBytes("net.minecraft.world.World") == null;
+                    .getClassBytes("net.minecraft.world.World") == null;
 
             String testClass = dep.testClass;
             if (SloppyDepLoader.class.getResource("/" + testClass.replace('.', '/') + ".class") != null) {
@@ -430,21 +399,25 @@ public class SloppyDepLoader {
 
             String repo = dep.repo;
             String filename = dep.filename;
-            if (!obfuscated && dep.dev.isPresent()) filename = dep.dev.get();
+            if (!obfuscated && dep.dev.isPresent())
+                filename = dep.dev.get();
 
             boolean coreLib = false;
 
             Pattern pattern = null;
             try {
-                if (dep.pattern.isPresent()) pattern = Pattern.compile(dep.pattern.get());
+                if(dep.pattern.isPresent())
+                    pattern = Pattern.compile(dep.pattern.get());
             } catch (PatternSyntaxException e) {
-                LOGGER.error("Invalid filename pattern: " + dep.pattern.get());
+                LOGGER.error("Invalid filename pattern: "+ dep.pattern.get());
                 e.printStackTrace();
             }
-            if (pattern == null) pattern = Pattern.compile("(\\w+).*?([\\d\\.]+)[-\\w]*\\.[^\\d]+");
+            if(pattern == null)
+                pattern = Pattern.compile("(\\w+).*?([\\d\\.]+)[-\\w]*\\.[^\\d]+");
 
             VersionedFile file = new VersionedFile(filename, pattern);
-            if (!file.matches()) throw new RuntimeException("Invalid filename format for dependency: " + filename);
+            if (!file.matches())
+                throw new RuntimeException("Invalid filename format for dependency: " + filename);
 
             addDep(new Dependency(repo, file, coreLib));
         }
@@ -455,28 +428,28 @@ public class SloppyDepLoader {
                 depMap.put(newDep.file.name, newDep);
                 depSet.add(newDep.file.name);
             } else {
-                LOGGER
-                    .trace("Not adding dependency " + newDep + " because a newer version of it has been added already");
+                LOGGER.trace("Not adding dependency " + newDep + " because a newer version of it has been added already");
             }
         }
 
         private boolean mergeNew(Dependency oldDep, Dependency newDep) {
-            if (oldDep == null) return true;
+            if (oldDep == null)
+                return true;
 
             Dependency newest = newDep.file.version.compareTo(oldDep.file.version) > 0 ? newDep : oldDep;
             newest.coreLib = newDep.coreLib || oldDep.coreLib;
 
             return newest == newDep;
         }
-
+        
         class SloppyDepDownloadTask implements Supplier<String> {
-
+            
             Dependency dep;
-
+            
             public SloppyDepDownloadTask(Dependency dep) {
                 this.dep = dep;
             }
-
+            
             @Override
             public String get() {
                 load(dep);
@@ -497,22 +470,19 @@ public class SloppyDepLoader {
     }
 
     public void preInit() {
-        if (!isUsed()) return;
-
+        if(!isUsed()) return;
+        
         ConfigSDL.reload();
-        if (ConfigSDL.enabled) {
-            for (Entry<String, String> modDepEntry : SloppyDepLoaderAPI.modDeps.entrySet()) {
-                Arrays.stream(
-                    modDepEntry.getValue()
-                        .split(";"))
-                    .forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
+        if(ConfigSDL.enabled) {
+            for(Entry<String, String> modDepEntry : SloppyDepLoaderAPI.modDeps.entrySet()) {
+                Arrays.stream(modDepEntry.getValue().split(";")).forEach(k -> addDependency(new SloppyDependency(Arrays.copyOf(k.split(","), 5))));
             }
-            if (inst != null) {
+            if(inst != null) {
                 inst.load();
             }
         }
     }
-
+    
     private boolean isUsed() {
         return !SloppyDepLoaderAPI.modDeps.isEmpty();
     }
