@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -37,6 +41,8 @@ public class AssetDirector {
     
     static final Logger LOGGER = LogManager.getLogger("AssetDirector");
     static final String NS = "AssetDirector";
+    private static final int DEFAULT_DOWNLOAD_THREADS = Math.max(4, Math.min(16, Runtime.getRuntime().availableProcessors() * 2));
+    private static final int DOWNLOAD_THREADS = getDownloadThreads();
     static final File AD_DIR = getAssetDirectorDir();
     
     public static final String SOUNDS_JSON_REQUESTED = ":tmp:requested";
@@ -112,23 +118,82 @@ public class AssetDirector {
         int count = plan.jarFetchQueue.size() + plan.objectFetchQueue.size();
         if(count == 0) return;
 
+        int threadCount = Math.min(DOWNLOAD_THREADS, count);
+        LOGGER.info("Downloading {} resources using {} threads...", count, threadCount);
+
         ProgressBar bar = ProgressBar.push("Asset", count);
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CompletionService<DownloadResult> downloads = new ExecutorCompletionService<>(executor);
+
+        for(String version : plan.jarFetchQueue) {
+            String name = "Minecraft " + version + " jar";
+            downloads.submit(() -> {
+                try {
+                    fetcher.fetchJar(version);
+                    return new DownloadResult(name, null);
+                } catch(Exception e) {
+                    return new DownloadResult(name, e);
+                }
+            });
+        }
+
+        for(String hash : plan.objectFetchQueue) {
+            String name = plan.objectNames.get(hash);
+            if(name.startsWith("minecraft/")) name = name.substring("minecraft/".length());
+            if(name.startsWith("sounds/")) name = name.substring("sounds/".length());
+
+            final String displayName = name;
+            downloads.submit(() -> {
+                try {
+                    fetcher.fetchAssetByHash(hash);
+                    return new DownloadResult(displayName, null);
+                } catch(Exception e) {
+                    return new DownloadResult(displayName, e);
+                }
+            });
+        }
+
+        Exception firstError = null;
+        Exception firstConnectionError = null;
+
         try {
-            for(String version : plan.jarFetchQueue) {
-                bar.step("Minecraft " + version + " jar");
-                fetcher.fetchJar(version);
-            }
+            for(int i = 0; i < count; i++) {
+                DownloadResult result = downloads.take().get();
+                bar.step(result.name);
 
-            for(String hash : plan.objectFetchQueue) {
-                String name = plan.objectNames.get(hash);
-                if(name.startsWith("minecraft/")) name = name.substring("minecraft/".length());
-                if(name.startsWith("sounds/")) name = name.substring("sounds/".length());
-
-                bar.step(name);
-                fetcher.fetchAssetByHash(hash);
+                if(result.error != null) {
+                    LOGGER.error("Failed to download {}", result.name, result.error);
+                    if(firstError == null) {
+                        firstError = result.error;
+                    }
+                    if(firstConnectionError == null && isConnectionFailure(result.error)) {
+                        firstConnectionError = result.error;
+                    }
+                }
             }
+        } catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
         } finally {
+            executor.shutdownNow();
             bar.pop();
+        }
+
+        if(firstConnectionError != null) {
+            throw firstConnectionError;
+        }
+        if(firstError != null) {
+            throw firstError;
+        }
+    }
+
+    private static class DownloadResult {
+        final String name;
+        final Exception error;
+
+        DownloadResult(String name, Exception error) {
+            this.name = name;
+            this.error = error;
         }
     }
 
@@ -234,7 +299,11 @@ public class AssetDirector {
                 loadJars(plan);
             } catch (Exception e) {
                 LOGGER.error("Failed to fetch assets of {}", modid, e);
-                if (e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
+                if(e instanceof InterruptedException || Thread.currentThread().isInterrupted()) {
+                    LOGGER.warn("Asset downloads were interrupted.");
+                    Thread.currentThread().interrupt();
+                }
+                if(isConnectionFailure(e)) {
                     LOGGER.error("Aborting further asset downloads since we seem to be offline.");
                     connectionOK = false;
                 }
@@ -251,6 +320,28 @@ public class AssetDirector {
         LOGGER.debug("AssetDirector pre-init for {} took {}s.", modid, (t1 - t0) / 1_000_000_000.0);
     }
     
+    private static int getDownloadThreads() {
+        String configuredValue = System.getProperty("assetDirector.downloadThreads");
+        if(configuredValue == null) return DEFAULT_DOWNLOAD_THREADS;
+
+        try {
+            return Math.max(1, Math.min(64, Integer.parseInt(configuredValue)));
+        } catch(NumberFormatException e) {
+            LOGGER.warn("Invalid assetDirector.downloadThreads value '{}'; using {}.", configuredValue, DEFAULT_DOWNLOAD_THREADS);
+            return DEFAULT_DOWNLOAD_THREADS;
+        }
+    }
+
+    private static boolean isConnectionFailure(Throwable error) {
+        while(error != null) {
+            if(error instanceof UnknownHostException || error instanceof SocketTimeoutException) {
+                return true;
+            }
+            error = error.getCause();
+        }
+        return false;
+    }
+
     private static File getAssetDirectorDir() {
         String sharedDataDir = System.getProperty("minecraft.sharedDataDir");
         if(sharedDataDir == null) {
