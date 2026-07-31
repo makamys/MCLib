@@ -8,11 +8,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
@@ -39,13 +43,14 @@ public class AssetFetcher {
     final static String VERSION_INDEX_PATH = "versions/%s/%s.json";
     
     private static final int DOWNLOAD_TIMEOUT = Integer.parseInt(System.getProperty("assetDirector.downloadTimeout", "10000")), // ms
-                             DOWNLOAD_ATTEMPTS = Integer.parseInt(System.getProperty("assetDirector.downloadAttempts", "3"));
+                             DOWNLOAD_ATTEMPTS = Math.max(1, Integer.parseInt(System.getProperty("assetDirector.downloadAttempts", "3")));
+    private static final long STALE_PART_FILE_AGE = 60L * 60L * 1000L;
     
     private static JsonObject manifest;
     public Map<String, VersionIndex> versionIndexes = new HashMap<>();
     public Map<String, AssetIndex> assetIndexes = new HashMap<>();
     
-    private Map<String, File> fileMap = new HashMap<>();
+    private Map<String, File> fileMap = new ConcurrentHashMap<>();
     private static final File NULL_FILE = new File("");
     
     public File assetsDir, adDir;
@@ -61,8 +66,12 @@ public class AssetFetcher {
     public void init() {
         LOGGER.info("Using directory " + adDir);
         
-        // clean up incomplete downloads
-        Arrays.stream(adDir.listFiles((dir, name) -> name.endsWith(".part"))).forEach(f -> f.delete());
+        // clean up incomplete downloads left by previous runs
+        File[] partFiles = adDir.listFiles((dir, name) -> name.endsWith(".part"));
+        if(partFiles != null) {
+            long staleBefore = System.currentTimeMillis() - STALE_PART_FILE_AGE;
+            Arrays.stream(partFiles).filter(f -> f.lastModified() < staleBefore).forEach(f -> f.delete());
+        }
         
         SSLHacker.hack();
     }
@@ -124,20 +133,8 @@ public class AssetFetcher {
     private void downloadAssetByHash(String hash) throws IOException {
         String relPath = "/" + hash.substring(0, 2) + "/" + hash;
         File outFile = getAssetFileForWrite(hash);
-        File outFileTmp = new File(adDir, outFile.getName() + ".part");
-        
-        for(int i = 0; i < DOWNLOAD_ATTEMPTS; i++) {
-            copyURLToFile(RESOURCES_ENDPOINT + relPath, outFileTmp);
-            if(hash.equals(getSha1(outFileTmp))) {
-                // OK
-                outFile.getParentFile().mkdirs();
-                outFileTmp.renameTo(outFile);
-                fileMap.put(hash, outFile);
-                break;
-            } else {
-                LOGGER.warn("Got invalid hash when downloading " + hash + ". Attempt " + (i + 1) + "/" + DOWNLOAD_ATTEMPTS);
-            }
-        }
+        copyURLToFile(RESOURCES_ENDPOINT + relPath, outFile, hash);
+        fileMap.put(hash, outFile);
     }
     
     /** Loads manifest, version index, asset index and client jar for the given version as needed. */
@@ -214,35 +211,93 @@ public class AssetFetcher {
     }
     
     private void copyURLToFile(String source, File destination) throws IOException {
-        String redirectedSource = AssetDownloadRedirector.redirect(source);
-        try {
-            URL url = new URL(redirectedSource);
-            // Download to a temporary file and only move it into place once complete, so an
-            // interrupted download can never leave a truncated file at the real cache path.
-            File partFile = new File(destination.getPath() + ".part");
-            LOGGER.trace("Downloading " + url + " to " + destination);
-            FileUtils.copyURLToFile(url, partFile, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
-            Files.move(partFile, destination);
-        } catch(IOException e) {
-            LOGGER.error("Failed to download " + redirectedSource + " to " + destination);
-            throw e;
-        }
+        copyURLToFile(source, destination, null);
     }
-    
+
+    private void copyURLToFile(String source, File destination, @Nullable String expectedSha1) throws IOException {
+        String redirectedSource = AssetDownloadRedirector.redirect(source);
+        URL url = new URL(redirectedSource);
+        File partFile = File.createTempFile("assetdirector-", ".part", adDir);
+        IOException lastError = null;
+
+        try {
+            for(int attempt = 0; attempt < DOWNLOAD_ATTEMPTS; attempt++) {
+                try {
+                    LOGGER.trace("Downloading " + url + " to " + destination);
+                    FileUtils.copyURLToFile(url, partFile, DOWNLOAD_TIMEOUT, DOWNLOAD_TIMEOUT);
+                    if(expectedSha1 != null && !expectedSha1.equals(getSha1(partFile))) {
+                        throw new IOException("Downloaded file has an invalid SHA-1 hash");
+                    }
+                    File parent = destination.getParentFile();
+                    if(parent != null) {
+                        parent.mkdirs();
+                    }
+                    Files.move(partFile, destination);
+                    return;
+                } catch(IOException e) {
+                    lastError = e;
+                    partFile.delete();
+                    LOGGER.warn("Failed to download " + redirectedSource + " to " + destination + ". Attempt " + (attempt + 1) + "/" + DOWNLOAD_ATTEMPTS + ": " + e);
+                    if(Thread.currentThread().isInterrupted()) {
+                        throw e;
+                    }
+                    if(attempt + 1 < DOWNLOAD_ATTEMPTS) {
+                        waitBeforeRetry(attempt);
+                    }
+                }
+            }
+        } finally {
+            partFile.delete();
+        }
+
+        throw new IOException("Failed to download " + redirectedSource + " to " + destination + " after " + DOWNLOAD_ATTEMPTS + " attempts", lastError);
+    }
+
     private <T> T downloadJson(String urlStr, Class<T> classOfT) throws Exception {
         String redirectedUrl = AssetDownloadRedirector.redirect(urlStr);
+        Exception lastError = null;
+
+        for(int attempt = 0; attempt < DOWNLOAD_ATTEMPTS; attempt++) {
+            try {
+                URL url = new URL(redirectedUrl);
+                URLConnection connection = url.openConnection();
+                connection.setConnectTimeout(DOWNLOAD_TIMEOUT);
+                connection.setReadTimeout(DOWNLOAD_TIMEOUT);
+                LOGGER.trace("Downloading JSON at " + url);
+                try(InputStream stream = connection.getInputStream()) {
+                    return loadJson(stream, classOfT);
+                }
+            } catch(Exception e) {
+                lastError = e;
+                LOGGER.warn("Failed to download JSON at " + redirectedUrl + ". Attempt " + (attempt + 1) + "/" + DOWNLOAD_ATTEMPTS + ": " + e);
+                if(Thread.currentThread().isInterrupted()) {
+                    throw e;
+                }
+                if(attempt + 1 < DOWNLOAD_ATTEMPTS) {
+                    waitBeforeRetry(attempt);
+                }
+            }
+        }
+
+        throw new IOException("Failed to download JSON at " + redirectedUrl + " after " + DOWNLOAD_ATTEMPTS + " attempts", lastError);
+    }
+
+    private void waitBeforeRetry(int attempt) throws InterruptedIOException {
+        long delay = Math.min(2000L, 250L << Math.min(attempt, 3)) + ThreadLocalRandom.current().nextInt(250);
         try {
-            URL url = new URL(redirectedUrl);
-            LOGGER.trace("Downloading JSON at " + url);
-            return loadJson(url.openStream(), classOfT);
-        } catch(Exception e) {
-            LOGGER.error("Failed to download JSON at " + redirectedUrl);
-            throw e;
+            Thread.sleep(delay);
+        } catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+            InterruptedIOException interrupted = new InterruptedIOException("Interrupted while waiting to retry download");
+            interrupted.initCause(e);
+            throw interrupted;
         }
     }
-    
+
     private <T> T loadJson(File file, Class<T> classOfT) throws Exception {
-        return loadJson(new FileInputStream(file), classOfT);
+        try(InputStream stream = new FileInputStream(file)) {
+            return loadJson(stream, classOfT);
+        }
     }
     
     private <T> T loadJson(InputStream stream, Class<T> classOfT) throws Exception {
