@@ -2,6 +2,7 @@ package makamys.mclib.ext.assetdirector;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -51,64 +52,99 @@ public class AssetDirector {
     static {
         instance = new AssetDirector();
     }
-    
-    private void parseJson(String json, String modid) throws Exception {
-        ADConfig config = new Gson().fromJson(json, ADConfig.class);
-        
+
+    private static class AssetLoadPlan {
+
         Set<String> objectFetchQueue = new HashSet<>();
-        Map<String, String> objectName = new HashMap<>(); // For informational purposes
+        Map<String, String> objectNames = new HashMap<>();
+
+        Set<String> jarFetchQueue = new HashSet<>();
         Set<String> jarLoadQueue = new HashSet<>();
-        Set<String> jarFetchQueue;
-        
-        for(Entry<String, VersionAssets> entry : config.assets.entrySet()) {
-            String version = entry.getKey();
-            fetcher.loadVersionDeps(version);
-            
-            VersionAssets entryObj = entry.getValue();
-            Set<String> objects = entryObj.objects != null ? entryObj.objects : new HashSet<>();
-            
-            if(entryObj.soundEvents != null) {
-                JsonObject soundJson = getOrFetchSoundJson(version);
-                objects.addAll(getObjectsAndSetCategories(entryObj.soundEvents, soundJson, modid));
-            }
-            
-            if(entryObj.jar) {
-            	jarLoadQueue.add(version);
-            }
-            
-            for(String name : objects) {
-                String hash = fetcher.getAssetHash(version, name, true);
-                if(hash != null) {
-                    objectFetchQueue.add(hash);
-                    objectName.put(hash, name);
+    }
+
+    private AssetLoadPlan resolveAssets(String json, String modid) throws Exception {
+        ADConfig config = new Gson().fromJson(json, ADConfig.class);
+        AssetLoadPlan plan = new AssetLoadPlan();
+
+        ProgressBar bar = ProgressBar.push("Version", config.assets.size());
+        try {
+            for (Entry<String, VersionAssets> entry : config.assets.entrySet()) {
+                String version = entry.getKey();
+                bar.step("Minecraft " + version);
+                fetcher.loadVersionDeps(version);
+
+                VersionAssets entryObj = entry.getValue();
+                Set<String> objects = entryObj.objects != null ? entryObj.objects : new HashSet<>();
+
+                if (entryObj.soundEvents != null) {
+                    JsonObject soundJson = getOrFetchSoundJson(version);
+                    objects.addAll(getObjectsAndSetCategories(entryObj.soundEvents, soundJson, modid));
+                }
+
+                if (entryObj.jar) {
+                    plan.jarLoadQueue.add(version);
+                }
+
+                for (String name : objects) {
+                    String hash = fetcher.getAssetHash(version, name, true);
+                    if (hash != null) {
+                        plan.objectFetchQueue.add(hash);
+                        plan.objectNames.put(hash, name);
+                    }
                 }
             }
+        } finally {
+            bar.pop();
         }
-        
-        objectFetchQueue = objectFetchQueue.stream().filter(fetcher::needsFetchAssetByHash).collect(Collectors.toSet());
-        jarFetchQueue = jarLoadQueue.stream().filter(fetcher::needsFetchJar).collect(Collectors.toSet());
-        int downloadCount = jarFetchQueue.size() + objectFetchQueue.size();
-        
-        if(downloadCount > 0) {
-            LOGGER.info("Downloading resources, this may take a while...");
-            ProgressBar downloadBar = ProgressBar.push("Downloading", downloadCount);
-            
-            for(String version : jarFetchQueue) {
-                downloadBar.step("minecraft.jar, version " + version);
+
+        plan.objectFetchQueue = plan.objectFetchQueue.stream()
+                .filter(fetcher::needsFetchAssetByHash)
+                .collect(Collectors.toSet());
+
+        plan.jarFetchQueue = plan.jarLoadQueue.stream()
+                .filter(fetcher::needsFetchJar)
+                .collect(Collectors.toSet());
+
+        return plan;
+    }
+
+    private void downloadAssets(AssetLoadPlan plan) throws Exception {
+        int count = plan.jarFetchQueue.size() + plan.objectFetchQueue.size();
+        if(count == 0) return;
+
+        ProgressBar bar = ProgressBar.push("Asset", count);
+        try {
+            for(String version : plan.jarFetchQueue) {
+                bar.step("Minecraft " + version + " jar");
                 fetcher.fetchJar(version);
             }
-        	
-            for(String assetHash : objectFetchQueue) {
-                String name = objectName.get(assetHash);
-                downloadBar.step(name.replaceFirst("minecraft/", "").replaceFirst("sounds/", ""));
-                fetcher.fetchAssetByHash(assetHash);
-            }
 
-            downloadBar.pop();
+            for(String hash : plan.objectFetchQueue) {
+                String name = plan.objectNames.get(hash);
+                if(name.startsWith("minecraft/")) name = name.substring("minecraft/".length());
+                if(name.startsWith("sounds/")) name = name.substring("sounds/".length());
+
+                bar.step(name);
+                fetcher.fetchAssetByHash(hash);
+            }
+        } finally {
+            bar.pop();
         }
-        
-        for(String version : jarLoadQueue) {
-            fetcher.loadJar(version);
+    }
+
+    private void loadJars(AssetLoadPlan plan) throws IOException {
+        if(plan.jarLoadQueue.isEmpty()) {
+            return;
+        }
+
+        ProgressBar bar = ProgressBar.push("Jar", plan.jarLoadQueue.size());
+        try {
+            for (String version : plan.jarLoadQueue) {
+                bar.step("Minecraft " + version);
+                fetcher.loadJar(version);
+            }
+        } finally {
+            bar.pop();
         }
     }
     
@@ -182,24 +218,29 @@ public class AssetDirector {
             fetcher.init();
             initialized = true;
         }
-        
-        ProgressBar bar = MCUtil.ProgressBar.push("AssetDirector - Loading assets", 1);
-        bar.step(modid);
-        
-        if(connectionOK) {
+
+        if (connectionOK) {
+            ProgressBar bar = ProgressBar.push("AssetDirector", 3);
             try {
-                LOGGER.trace("Fetching assets of " + modid);
-                parseJson(json, modid);
-            } catch(Exception e) {
-                LOGGER.error("Failed to fetch assets of " + modid);
-                if(e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
+                LOGGER.trace("Fetching assets of {}", modid);
+
+                bar.step("Resolving assets");
+                AssetLoadPlan plan = resolveAssets(json, modid);
+
+                bar.step("Downloading assets");
+                downloadAssets(plan);
+
+                bar.step("Loading jars");
+                loadJars(plan);
+            } catch (Exception e) {
+                LOGGER.error("Failed to fetch assets of {}", modid, e);
+                if (e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
                     LOGGER.error("Aborting further asset downloads since we seem to be offline.");
                     connectionOK = false;
                 }
-                e.printStackTrace();
             }
+            bar.pop();
         }
-        bar.pop();
 
         if(AssetDirectorAPI.jsons.isEmpty() && !resourcePackInjected) {
             MultiVersionDefaultResourcePack.inject(this);
