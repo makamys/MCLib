@@ -1,8 +1,8 @@
 package makamys.mclib.core;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,8 +29,8 @@ public class MCLib {
     
     public static EventBus FML_MASTER;
 
-    private static final AtomicBoolean modEventHandlerRegistered = SharedReference
-            .get("mclib", "modEventHandlerRegistered", AtomicBoolean.class);
+    private static final MutableBoolean modEventHandlerRegistered = SharedReference
+            .get("mclib", "modEventHandlerRegistered", MutableBoolean.class);
 
     public MCLib(boolean subscribe) {
         String modid = Loader.instance().activeModContainer().getModId();
@@ -45,16 +45,14 @@ public class MCLib {
                 LoadController lc = ReflectionHelper.getPrivateValue(Loader.class, Loader.instance(), "modController");
                 FML_MASTER = ReflectionHelper.getPrivateValue(LoadController.class, lc, "masterChannel");
 
-                synchronized(modEventHandlerRegistered) {
-                    if(!modEventHandlerRegistered.get()) {
-                        Map<String, EventBus> eventChannels = ReflectionHelper
-                                .getPrivateValue(LoadController.class, lc, "eventChannels");
-                        ModEventHandler modEventHandler = new ModEventHandler();
-                        for(EventBus modEventBus : eventChannels.values()) {
-                            modEventBus.register(modEventHandler);
-                        }
-                        modEventHandlerRegistered.set(true);
+                if(modEventHandlerRegistered.isFalse()) {
+                    Map<String, EventBus> eventChannels = ReflectionHelper
+                            .getPrivateValue(LoadController.class, lc, "eventChannels");
+                    ModEventHandler modEventHandler = new ModEventHandler();
+                    for(EventBus modEventBus : eventChannels.values()) {
+                        modEventBus.register(modEventHandler);
                     }
+                    modEventHandlerRegistered.setTrue();
                 }
 
                 FML_MASTER.register(this);
@@ -80,8 +78,10 @@ public class MCLib {
     
     @Subscribe
     public void onPreInit(FMLPreInitializationEvent event) {
-        // init(false) users call this handler manually from their mod event handler.
-        if(!modEventHandlerRegistered.get()) {
+        if(modEventHandlerRegistered.isFalse()) {
+            // We can only reach this branch when no MCLib instance registered the automatic
+            // per-mod pre-init handler. In that case this method must have been forwarded
+            // manually by the current mod, so we run its per-mod tasks here.
             TaskQueue.runModTasks(LoaderState.PREINITIALIZATION);
         }
         if(SharedLibHelper.isNewestLib(this)) {
