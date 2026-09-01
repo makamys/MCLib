@@ -44,7 +44,10 @@ public class AssetDirector {
     
     private AssetFetcher fetcher = new AssetFetcher(MCUtil.getMCAssetsDir(), AD_DIR);
     private Map<String, JsonObject> soundJsons = new HashMap<>();
-    
+    private boolean initialized;
+    private boolean connectionOK = true;
+    private boolean resourcePackInjected;
+
     static {
         instance = new AssetDirector();
     }
@@ -169,39 +172,42 @@ public class AssetDirector {
         return fetcher;
     }
 
-    public void preInit() {
+    public void preInit(String modid) {
+        String json = AssetDirectorAPI.jsons.remove(modid);
+        if(json == null) return;
+
         long t0 = System.nanoTime();
         
-        fetcher.init();
+        if(!initialized) {
+            fetcher.init();
+            initialized = true;
+        }
         
-        ProgressBar bar = MCUtil.ProgressBar.push("AssetDirector - Loading assets", AssetDirectorAPI.jsons.size());
-        boolean connectionOK = true;
+        ProgressBar bar = MCUtil.ProgressBar.push("AssetDirector - Loading assets", 1);
+        bar.step(modid);
         
-        for(Entry<String, String> entry : AssetDirectorAPI.jsons.entrySet()) {
-            String modid = entry.getKey();
-            String json = entry.getValue();
-            
-            bar.step(modid);
-            if(connectionOK) {
-                try {
-                    LOGGER.trace("Fetching assets of " + modid);
-                    parseJson(json, modid);
-                } catch(Exception e) {
-                    LOGGER.error("Failed to fetch assets of " + modid);
-                    if(e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
-                        LOGGER.error("Aborting further asset downloads since we seem to be offline.");
-                        connectionOK = false;
-                    }
-                    e.printStackTrace();
+        if(connectionOK) {
+            try {
+                LOGGER.trace("Fetching assets of " + modid);
+                parseJson(json, modid);
+            } catch(Exception e) {
+                LOGGER.error("Failed to fetch assets of " + modid);
+                if(e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
+                    LOGGER.error("Aborting further asset downloads since we seem to be offline.");
+                    connectionOK = false;
                 }
+                e.printStackTrace();
             }
         }
         bar.pop();
-        
-        MultiVersionDefaultResourcePack.inject(this);
+
+        if(AssetDirectorAPI.jsons.isEmpty() && !resourcePackInjected) {
+            MultiVersionDefaultResourcePack.inject(this);
+            resourcePackInjected = true;
+        }
         
         long t1 = System.nanoTime();
-        LOGGER.debug("AssetDirector pre-init took " + (t1 - t0) / 1_000_000_000.0 + "s.");
+        LOGGER.debug("AssetDirector pre-init for {} took {}s.", modid, (t1 - t0) / 1_000_000_000.0);
     }
     
     private static File getAssetDirectorDir() {
