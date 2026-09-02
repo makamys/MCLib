@@ -288,10 +288,10 @@ public class AssetDirector {
             loadJars(plan);
         } catch(InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOGGER.warn("Asset processing or {} was interrupted.", modid, e);
+            LOGGER.warn("Asset processing for {} was interrupted.", modid, e);
             return;
         } catch(Exception e) {
-            LOGGER.error("Failed to fetch assets of {}", modid, e);
+            LOGGER.error("Failed to fetch assets for {}", modid, e);
         } finally {
             bar.pop();
         }
