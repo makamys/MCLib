@@ -52,7 +52,6 @@ public class AssetDirector {
     private AssetFetcher fetcher = new AssetFetcher(MCUtil.getMCAssetsDir(), AD_DIR);
     private Map<String, JsonObject> soundJsons = new HashMap<>();
     private boolean initialized;
-    private boolean connectionOK = true;
     private boolean resourcePackInjected;
 
     static {
@@ -153,37 +152,28 @@ public class AssetDirector {
             });
         }
 
-        Exception firstError = null;
-        Exception firstConnectionError = null;
-
         try {
+            // Allow no more than one connection error in a row in order to distinguish one misbehaving asset from offline
+            boolean consecutiveConnectionError = false;
+
             for(int i = 0; i < count; i++) {
                 DownloadResult result = downloads.take().get();
                 bar.step(result.name);
 
                 if(result.error != null) {
                     LOGGER.error("Failed to download {}", result.name, result.error);
-                    if(firstError == null) {
-                        firstError = result.error;
+                    if (isConnectionFailure(result.error) && !consecutiveConnectionError) {
+                        consecutiveConnectionError = true;
+                    } else {
+                        throw result.error;
                     }
-                    if(firstConnectionError == null && isConnectionFailure(result.error)) {
-                        firstConnectionError = result.error;
-                    }
+                } else {
+                    consecutiveConnectionError = false;
                 }
             }
-        } catch(InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw e;
         } finally {
             executor.shutdownNow();
             bar.pop();
-        }
-
-        if(firstConnectionError != null) {
-            throw firstConnectionError;
-        }
-        if(firstError != null) {
-            throw firstError;
         }
     }
 
@@ -284,32 +274,22 @@ public class AssetDirector {
             initialized = true;
         }
 
-        if (connectionOK) {
-            ProgressBar bar = ProgressBar.push("AssetDirector", 3);
-            try {
-                LOGGER.trace("Fetching assets of {}", modid);
+        ProgressBar bar = ProgressBar.push("AssetDirector", 3);
+        try {
+            LOGGER.trace("Fetching assets of {}", modid);
 
-                bar.step("Resolving assets");
-                AssetLoadPlan plan = resolveAssets(json, modid);
+            bar.step("Resolving assets");
+            AssetLoadPlan plan = resolveAssets(json, modid);
 
-                bar.step("Downloading assets");
-                downloadAssets(plan);
+            bar.step("Downloading assets");
+            downloadAssets(plan);
 
-                bar.step("Loading jars");
-                loadJars(plan);
-            } catch (Exception e) {
-                LOGGER.error("Failed to fetch assets of {}", modid, e);
-                if(e instanceof InterruptedException || Thread.currentThread().isInterrupted()) {
-                    LOGGER.warn("Asset downloads were interrupted.");
-                    Thread.currentThread().interrupt();
-                }
-                if(isConnectionFailure(e)) {
-                    LOGGER.error("Aborting further asset downloads since we seem to be offline.");
-                    connectionOK = false;
-                }
-            }
-            bar.pop();
+            bar.step("Loading jars");
+            loadJars(plan);
+        } catch (Exception e) {
+            LOGGER.error("Failed to fetch assets of {}", modid, e);
         }
+        bar.pop();
 
         if(AssetDirectorAPI.jsons.isEmpty() && !resourcePackInjected) {
             MultiVersionDefaultResourcePack.inject(this);
