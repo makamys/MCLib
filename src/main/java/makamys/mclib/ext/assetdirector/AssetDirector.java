@@ -286,10 +286,15 @@ public class AssetDirector {
 
             bar.step("Loading jars");
             loadJars(plan);
-        } catch (Exception e) {
+        } catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Asset processing or {} was interrupted.", modid, e);
+            return;
+        } catch(Exception e) {
             LOGGER.error("Failed to fetch assets of {}", modid, e);
+        } finally {
+            bar.pop();
         }
-        bar.pop();
 
         if(AssetDirectorAPI.jsons.isEmpty() && !resourcePackInjected) {
             MultiVersionDefaultResourcePack.inject(this);
