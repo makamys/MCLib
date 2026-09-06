@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import cpw.mods.fml.client.FMLFileResourcePack;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.DefaultResourcePack;
@@ -51,7 +52,16 @@ public class ResourcePackUtil {
      * Returns true if the resource pack is one that should be ignored by AssetDirector when searching for overrides of modern assets.
      */
     public static boolean isBuiltIn(IResourcePack resPack) {
-        return resPack instanceof DefaultResourcePack || resPack.getPackName().equals("FMLFileResourcePack:Forge Mod Loader") || resPack.getPackName().equals("FMLFileResourcePack:Minecraft Forge");
+        if (resPack instanceof DefaultResourcePack) {
+            return true;
+        }
+
+        if (resPack instanceof FMLFileResourcePack) {
+            String name = ((FMLFileResourcePack) resPack).getFMLContainer().getName();
+            return "Forge Mod Loader".equals(name) || "Minecraft Forge".equals(name);
+        }
+
+        return false;
     }
     
 }
