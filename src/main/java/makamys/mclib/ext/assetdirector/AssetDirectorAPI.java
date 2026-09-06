@@ -8,6 +8,7 @@ import java.util.Map;
 import com.google.gson.Gson;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.LoaderState;
+import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import cpw.mods.fml.relauncher.Side;
 import makamys.mclib.core.TaskQueue;
@@ -30,8 +31,9 @@ public class AssetDirectorAPI {
     
     static {
         if(active) {
-            TaskQueue.enqueueTask(LoaderState.PREINITIALIZATION, "AssetDirectorPreinit", () -> {
-                AssetDirector.instance.preInit();
+            TaskQueue.enqueueModTask(LoaderState.PREINITIALIZATION, "AssetDirectorPreinit", () -> {
+                ModContainer activeMod = Loader.instance().activeModContainer();
+                AssetDirector.instance.preInit(activeMod.getModId());
             });
         }
     }

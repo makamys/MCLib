@@ -153,8 +153,12 @@ public class MultiVersionDefaultResourcePack implements IResourcePack {
     
     private String convertPath(String path, Version version) {
         if(version.compareTo(v1_13) >= 0) {
-            path = path.replaceFirst("^textures/blocks/", "textures/block/");
-            path = path.replaceFirst("^textures/items/", "textures/item/");
+            if (path.startsWith("textures/blocks/")) {
+                return "textures/block/" + path.substring("textures/blocks/".length());
+            }
+            if (path.startsWith("textures/items/")) {
+                return "textures/item/" + path.substring("textures/items/".length());
+            }
         }
         return path;
     }
