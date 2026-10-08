@@ -15,6 +15,8 @@ When multiple mods with MCLib embedded are present, calls to shared modules from
 	* Accessed via `AssetDirectorAPI`
 	* Example usage: [ADTest.java](src/main/java/makamys/mclib/ext/assetdirector/test/ADTest.java)
 	* Supported Minecraft download URLs can be redirected to a mirror by setting `-DassetDirector.downloadRedirectBaseUrl=<base url>` at startup. For example, `-DassetDirector.downloadRedirectBaseUrl=https://bmclapi2.bangbang93.com` redirects network downloads while keeping the local Mojang-compatible cache layout unchanged.
+	* Asset downloads run concurrently. The thread count defaults to 4-16 based on available processors and can be configured with `-DassetDirector.downloadThreads=<count>` (range: 1-64).
+	* Download retries can be configured with `-DassetDirector.downloadAttempts=<count>`, and the connection/read timeout with `-DassetDirector.downloadTimeout=<milliseconds>`.
 * `SloppyDepLoader`: a dependency loader for optional dependencies, which won't fail if the dependency fails to be located. It makes no guarantee it will locate the requested dependencies, hence its name.
 	* Accessed via `SloppyDepLoaderAPI`.
 	* Example usage: [SDLTest.java](src/main/java/makamys/mclib/sloppydeploader/test/SDLTest.java).

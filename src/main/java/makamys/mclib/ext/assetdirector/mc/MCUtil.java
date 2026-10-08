@@ -31,6 +31,10 @@ public class MCUtil {
         }
         
         public void pop() {
+            // ProgressManager refuses to pop unfinished bars
+            while(internal.getStep() < internal.getSteps()) {
+                internal.step("");
+            }
             ProgressManager.pop(internal);
         }
     }

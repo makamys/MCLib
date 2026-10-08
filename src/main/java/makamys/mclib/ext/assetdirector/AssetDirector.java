@@ -2,6 +2,7 @@ package makamys.mclib.ext.assetdirector;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -13,6 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -36,6 +41,8 @@ public class AssetDirector {
     
     static final Logger LOGGER = LogManager.getLogger("AssetDirector");
     static final String NS = "AssetDirector";
+    private static final int DEFAULT_DOWNLOAD_THREADS = Math.max(4, Math.min(16, Runtime.getRuntime().availableProcessors() * 2));
+    private static final int DOWNLOAD_THREADS = getDownloadThreads();
     static final File AD_DIR = getAssetDirectorDir();
     
     public static final String SOUNDS_JSON_REQUESTED = ":tmp:requested";
@@ -44,68 +51,155 @@ public class AssetDirector {
     
     private AssetFetcher fetcher = new AssetFetcher(MCUtil.getMCAssetsDir(), AD_DIR);
     private Map<String, JsonObject> soundJsons = new HashMap<>();
-    
+    private boolean initialized;
+    private boolean resourcePackInjected;
+
     static {
         instance = new AssetDirector();
     }
-    
-    private void parseJson(String json, String modid) throws Exception {
-        ADConfig config = new Gson().fromJson(json, ADConfig.class);
-        
+
+    private static class AssetLoadPlan {
+
         Set<String> objectFetchQueue = new HashSet<>();
-        Map<String, String> objectName = new HashMap<>(); // For informational purposes
+        Map<String, String> objectNames = new HashMap<>();
+
+        Set<String> jarFetchQueue = new HashSet<>();
         Set<String> jarLoadQueue = new HashSet<>();
-        Set<String> jarFetchQueue;
-        
-        for(Entry<String, VersionAssets> entry : config.assets.entrySet()) {
-            String version = entry.getKey();
-            fetcher.loadVersionDeps(version);
-            
-            VersionAssets entryObj = entry.getValue();
-            Set<String> objects = entryObj.objects != null ? entryObj.objects : new HashSet<>();
-            
-            if(entryObj.soundEvents != null) {
-                JsonObject soundJson = getOrFetchSoundJson(version);
-                objects.addAll(getObjectsAndSetCategories(entryObj.soundEvents, soundJson, modid));
-            }
-            
-            if(entryObj.jar) {
-            	jarLoadQueue.add(version);
-            }
-            
-            for(String name : objects) {
-                String hash = fetcher.getAssetHash(version, name, true);
-                if(hash != null) {
-                    objectFetchQueue.add(hash);
-                    objectName.put(hash, name);
+    }
+
+    private AssetLoadPlan resolveAssets(String json, String modid) throws Exception {
+        ADConfig config = new Gson().fromJson(json, ADConfig.class);
+        AssetLoadPlan plan = new AssetLoadPlan();
+
+        ProgressBar bar = ProgressBar.push("Version", config.assets.size());
+        try {
+            for (Entry<String, VersionAssets> entry : config.assets.entrySet()) {
+                String version = entry.getKey();
+                bar.step("Minecraft " + version);
+                fetcher.loadVersionDeps(version);
+
+                VersionAssets entryObj = entry.getValue();
+                Set<String> objects = entryObj.objects != null ? entryObj.objects : new HashSet<>();
+
+                if (entryObj.soundEvents != null) {
+                    JsonObject soundJson = getOrFetchSoundJson(version);
+                    objects.addAll(getObjectsAndSetCategories(entryObj.soundEvents, soundJson, modid));
+                }
+
+                if (entryObj.jar) {
+                    plan.jarLoadQueue.add(version);
+                }
+
+                for (String name : objects) {
+                    String hash = fetcher.getAssetHash(version, name, true);
+                    if (hash != null) {
+                        plan.objectFetchQueue.add(hash);
+                        plan.objectNames.put(hash, name);
+                    }
                 }
             }
+        } finally {
+            bar.pop();
         }
-        
-        objectFetchQueue = objectFetchQueue.stream().filter(fetcher::needsFetchAssetByHash).collect(Collectors.toSet());
-        jarFetchQueue = jarLoadQueue.stream().filter(fetcher::needsFetchJar).collect(Collectors.toSet());
-        int downloadCount = jarFetchQueue.size() + objectFetchQueue.size();
-        
-        if(downloadCount > 0) {
-            LOGGER.info("Downloading resources, this may take a while...");
-            ProgressBar downloadBar = ProgressBar.push("Downloading", downloadCount);
-            
-            for(String version : jarFetchQueue) {
-                downloadBar.step("minecraft.jar, version " + version);
-                fetcher.fetchJar(version);
-            }
-        	
-            for(String assetHash : objectFetchQueue) {
-                String name = objectName.get(assetHash);
-                downloadBar.step(name.replaceFirst("minecraft/", "").replaceFirst("sounds/", ""));
-                fetcher.fetchAssetByHash(assetHash);
-            }
 
-            downloadBar.pop();
+        plan.objectFetchQueue = plan.objectFetchQueue.stream()
+                .filter(fetcher::needsFetchAssetByHash)
+                .collect(Collectors.toSet());
+
+        plan.jarFetchQueue = plan.jarLoadQueue.stream()
+                .filter(fetcher::needsFetchJar)
+                .collect(Collectors.toSet());
+
+        return plan;
+    }
+
+    private void downloadAssets(AssetLoadPlan plan) throws Exception {
+        int count = plan.jarFetchQueue.size() + plan.objectFetchQueue.size();
+        if(count == 0) return;
+
+        int threadCount = Math.min(DOWNLOAD_THREADS, count);
+        LOGGER.info("Downloading {} resources using {} threads...", count, threadCount);
+
+        ProgressBar bar = ProgressBar.push("Asset", count);
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CompletionService<DownloadResult> downloads = new ExecutorCompletionService<>(executor);
+
+        for(String version : plan.jarFetchQueue) {
+            String name = "Minecraft " + version + " jar";
+            downloads.submit(() -> {
+                try {
+                    fetcher.fetchJar(version);
+                    return new DownloadResult(name, null);
+                } catch(Exception e) {
+                    return new DownloadResult(name, e);
+                }
+            });
         }
-        
-        for(String version : jarLoadQueue) {
-            fetcher.loadJar(version);
+
+        for(String hash : plan.objectFetchQueue) {
+            String name = plan.objectNames.get(hash);
+            if(name.startsWith("minecraft/")) name = name.substring("minecraft/".length());
+            if(name.startsWith("sounds/")) name = name.substring("sounds/".length());
+
+            final String displayName = name;
+            downloads.submit(() -> {
+                try {
+                    fetcher.fetchAssetByHash(hash);
+                    return new DownloadResult(displayName, null);
+                } catch(Exception e) {
+                    return new DownloadResult(displayName, e);
+                }
+            });
+        }
+
+        try {
+            // Allow no more than one connection error in a row in order to distinguish one misbehaving asset from offline
+            boolean consecutiveConnectionError = false;
+
+            for(int i = 0; i < count; i++) {
+                DownloadResult result = downloads.take().get();
+                bar.step(result.name);
+
+                if(result.error != null) {
+                    LOGGER.error("Failed to download {}", result.name, result.error);
+                    if (isConnectionFailure(result.error) && !consecutiveConnectionError) {
+                        consecutiveConnectionError = true;
+                    } else {
+                        throw result.error;
+                    }
+                } else {
+                    consecutiveConnectionError = false;
+                }
+            }
+        } finally {
+            executor.shutdownNow();
+            bar.pop();
+        }
+    }
+
+    private static class DownloadResult {
+        final String name;
+        final Exception error;
+
+        DownloadResult(String name, Exception error) {
+            this.name = name;
+            this.error = error;
+        }
+    }
+
+    private void loadJars(AssetLoadPlan plan) throws IOException {
+        if(plan.jarLoadQueue.isEmpty()) {
+            return;
+        }
+
+        ProgressBar bar = ProgressBar.push("Jar", plan.jarLoadQueue.size());
+        try {
+            for (String version : plan.jarLoadQueue) {
+                bar.step("Minecraft " + version);
+                fetcher.loadJar(version);
+            }
+        } finally {
+            bar.pop();
         }
     }
     
@@ -169,41 +263,70 @@ public class AssetDirector {
         return fetcher;
     }
 
-    public void preInit() {
+    public void preInit(String modid) {
+        String json = AssetDirectorAPI.jsons.remove(modid);
+        if(json == null) return;
+
         long t0 = System.nanoTime();
         
-        fetcher.init();
-        
-        ProgressBar bar = MCUtil.ProgressBar.push("AssetDirector - Loading assets", AssetDirectorAPI.jsons.size());
-        boolean connectionOK = true;
-        
-        for(Entry<String, String> entry : AssetDirectorAPI.jsons.entrySet()) {
-            String modid = entry.getKey();
-            String json = entry.getValue();
-            
-            bar.step(modid);
-            if(connectionOK) {
-                try {
-                    LOGGER.trace("Fetching assets of " + modid);
-                    parseJson(json, modid);
-                } catch(Exception e) {
-                    LOGGER.error("Failed to fetch assets of " + modid);
-                    if(e instanceof UnknownHostException || e instanceof SocketTimeoutException) {
-                        LOGGER.error("Aborting further asset downloads since we seem to be offline.");
-                        connectionOK = false;
-                    }
-                    e.printStackTrace();
-                }
-            }
+        if(!initialized) {
+            fetcher.init();
+            initialized = true;
         }
-        bar.pop();
-        
-        MultiVersionDefaultResourcePack.inject(this);
+
+        ProgressBar bar = ProgressBar.push("AssetDirector", 3);
+        try {
+            LOGGER.trace("Fetching assets of {}", modid);
+
+            bar.step("Resolving assets");
+            AssetLoadPlan plan = resolveAssets(json, modid);
+
+            bar.step("Downloading assets");
+            downloadAssets(plan);
+
+            bar.step("Loading jars");
+            loadJars(plan);
+        } catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Asset processing for {} was interrupted.", modid, e);
+            return;
+        } catch(Exception e) {
+            LOGGER.error("Failed to fetch assets for {}", modid, e);
+        } finally {
+            bar.pop();
+        }
+
+        if(AssetDirectorAPI.jsons.isEmpty() && !resourcePackInjected) {
+            MultiVersionDefaultResourcePack.inject(this);
+            resourcePackInjected = true;
+        }
         
         long t1 = System.nanoTime();
-        LOGGER.debug("AssetDirector pre-init took " + (t1 - t0) / 1_000_000_000.0 + "s.");
+        LOGGER.debug("AssetDirector pre-init for {} took {}s.", modid, (t1 - t0) / 1_000_000_000.0);
     }
     
+    private static int getDownloadThreads() {
+        String configuredValue = System.getProperty("assetDirector.downloadThreads");
+        if(configuredValue == null) return DEFAULT_DOWNLOAD_THREADS;
+
+        try {
+            return Math.max(1, Math.min(64, Integer.parseInt(configuredValue)));
+        } catch(NumberFormatException e) {
+            LOGGER.warn("Invalid assetDirector.downloadThreads value '{}'; using {}.", configuredValue, DEFAULT_DOWNLOAD_THREADS);
+            return DEFAULT_DOWNLOAD_THREADS;
+        }
+    }
+
+    private static boolean isConnectionFailure(Throwable error) {
+        while(error != null) {
+            if(error instanceof UnknownHostException || error instanceof SocketTimeoutException) {
+                return true;
+            }
+            error = error.getCause();
+        }
+        return false;
+    }
+
     private static File getAssetDirectorDir() {
         String sharedDataDir = System.getProperty("minecraft.sharedDataDir");
         if(sharedDataDir == null) {
